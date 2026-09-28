@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Cpu, Sliders, Save, ChevronDown, ChevronUp, Sparkles, Wand2, RefreshCw, Palette, Layers, Mic, Eye, Scissors } from "lucide-react";
 import { Preset } from "../types";
+import { FaceSwapperCard } from "./processorCards/FaceSwapperCard";
 
 interface ProcessorSettingsProps {
   availableProcessors: string[];
@@ -269,100 +270,24 @@ export const ProcessorSettings: React.FC<ProcessorSettingsProps> = ({
           </div>
         )}
 
-        {/* CARD 1: FACE SWAPPER */}
+        {/* CARD 1: FACE SWAPPER (extracted to processorCards/FaceSwapperCard) */}
         {selectedProcessors.includes("face_swapper") && (
-          <div className="bg-zinc-950/60 border border-red-500/30 rounded-xl overflow-hidden shadow-lg shadow-red-950/20 transition-all">
-            <div
-              onClick={() => toggleExpand("face_swapper")}
-              className="px-3.5 py-2.5 bg-zinc-900/70 hover:bg-zinc-900 cursor-pointer flex items-center justify-between border-b border-zinc-800"
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-sm shadow-red-500" />
-                <span className="text-xs font-black text-white tracking-wider">
-                  {getProcessorTitle("face_swapper")}
-                </span>
-              </div>
-              <div className="flex items-center gap-2 text-zinc-400">
-                <span className="text-[10px] font-mono text-zinc-500">{faceSwapperModel}</span>
-                {expandedCards["face_swapper"] ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-              </div>
-            </div>
-
-            {expandedCards["face_swapper"] && (
-              <div className="p-3.5 space-y-3 animate-fade-in">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-[10px] font-bold text-zinc-400 block mb-1">Modelo</label>
-                    <div className="relative">
-                      <select
-                        value={faceSwapperModel}
-                        onChange={(e) => setFaceSwapperModel(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 text-xs px-2.5 py-1.5 rounded-lg appearance-none font-bold text-zinc-200 outline-none cursor-pointer focus:border-red-500"
-                      >
-                        <option value="inswapper_128_fp16">inswapper_128_fp16</option>
-                        <option value="inswapper_128">inswapper_128</option>
-                        <option value="simswap_256">simswap_256</option>
-                        <option value="simswap_512_unofficial">simswap_512_unofficial</option>
-                        <option value="blendswap_256">blendswap_256</option>
-                        <option value="uniface_256">uniface_256</option>
-                      </select>
-                      <ChevronDown size={12} className="absolute right-2.5 top-2.5 text-zinc-500 pointer-events-none" />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold text-zinc-400 block mb-1">Pixel Boost</label>
-                    <div className="relative">
-                      <select
-                        value={faceSwapperPixelBoost}
-                        onChange={(e) => setFaceSwapperPixelBoost(e.target.value)}
-                        className="w-full bg-zinc-900 border border-zinc-800 text-xs px-2.5 py-1.5 rounded-lg appearance-none font-bold text-zinc-200 outline-none cursor-pointer focus:border-red-500"
-                      >
-                        <option value="None">None (Nenhum)</option>
-                        <option value="256x256">256x256</option>
-                        <option value="512x512">512x512</option>
-                        <option value="768x768">768x768</option>
-                        <option value="1024x1024">1024x1024</option>
-                      </select>
-                      <ChevronDown size={12} className="absolute right-2.5 top-2.5 text-zinc-500 pointer-events-none" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="text-zinc-300">Intensity (Peso do Rosto)</span>
-                    <span className="text-red-400 font-mono font-bold">{(faceSwapperWeight * 100).toFixed(0)}%</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={faceSwapperWeight}
-                    onChange={(e) => setFaceSwapperWeight(parseFloat(e.target.value))}
-                    className="w-full accent-red-600 h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-bold">
-                    <span className="text-zinc-300">Mask Blur (Suavização de Borda)</span>
-                    <span className="text-red-400 font-mono font-bold">{faceMaskBlur}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="50"
-                    step="1"
-                    value={faceMaskBlur}
-                    onChange={(e) => setFaceMaskBlur(parseInt(e.target.value))}
-                    className="w-full accent-red-600 h-1.5 bg-zinc-800 rounded-lg appearance-none cursor-pointer"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          <FaceSwapperCard
+            isExpanded={expandedCards["face_swapper"] || false}
+            onToggle={toggleExpand}
+            faceSwapperModel={faceSwapperModel}
+            setFaceSwapperModel={setFaceSwapperModel}
+            faceSwapperPixelBoost={faceSwapperPixelBoost}
+            setFaceSwapperPixelBoost={setFaceSwapperPixelBoost}
+            faceSwapperWeight={faceSwapperWeight}
+            setFaceSwapperWeight={setFaceSwapperWeight}
+            faceMaskBlur={faceMaskBlur}
+            setFaceMaskBlur={setFaceMaskBlur}
+            detectionThreshold={detectionThreshold}
+            setDetectionThreshold={setDetectionThreshold}
+            smoothing={smoothing}
+            setSmoothing={setSmoothing}
+          />
         )}
 
         {/* CARD 2: DEEP SWAPPER (Modelos de Celebridades & DeepFakes Especializados) */}
