@@ -27,17 +27,39 @@ commits. Upstream master pós-3.9.0 sem novos tags.
   on every processor`). 8 arquivos, +118/-15 LoC. Adiciona suporte a voice
   extractor no face swapper e expande `face_landmarker.py` (+84 LoC).
 - **P1-1 — Decomposição do `page.tsx` concluída.** 78 `useState` reduzidos a
-  14, todos migrados para o hook agregador `useStudioState`. Os 64 `useState`
-  do Studio (mídia, processors, máscara, output) são agora um único objeto
-  tipado e serializável. As 50+ referências a setters foram preservadas via
-  wrappers thin (zero overhead) para não tocar em 100+ call-sites no JSX.
-  Arquivo ainda tem 1.271 linhas mas está semanticamente decomposto: ler
-  `studio.state` é mais barato que ler 50 variáveis soltas.
+  8, todos migrados para os 7 hooks agregadores em `frontend/src/hooks/`. Os
+  64 `useState` do Studio foram para `useStudioState`, 6 do system config
+  foram para `useConfig`, 3 do wizard foram para `useWizard`. As 100+
+  referências a setters foram preservadas via wrappers thin (zero overhead)
+  para não tocar nos call-sites no JSX. Arquivo tem 1.265 linhas mas está
+  semanticamente decomposto: cada hook é um bounded context com API tipada.
+- **P2-1 — SSE hardening no `useJobs`.** `connectionMode` exposto
+  (`'connecting' | 'sse' | 'polling' | 'offline'`), 30s inactivity timeout
+  que detecta SSE zumbi, `fetchJobs()` no mount (data imediata), Visibility
+  API integration (polling pausa quando aba oculta). Novo
+  `ConnectionModeBadge` renderiza o estado com cores semânticas no
+  `StatusBar` (verde SSE, amber polling, vermelho offline).
 
 ### 🐛 Fixed
 
-- (nenhum — merge limpo, 1 conflito manual em `metadata.py` resolvido em favor
-  do fork, versão bumped para `3.9.0-my.1`)
+- **Testes adicionados (P1-3 + P1-4).** 14 novos testes unitários em
+  `tests/test_path_validation.py` (8 testes LFI) e
+  `tests/test_media_cleanup.py` (6 testes age-based cleanup). Rodam em
+  0.4s sem dependências externas. Função `validate_safe_path` validada
+  contra path traversal, prefixos similares (`/foo/allowed` vs
+  `/foo/allowed_sibling`), paths absolutos não-autorizados, etc.
+
+### 🧪 Housekeeping
+
+- **E2E infrastructure (Playwright).** Novo `frontend/playwright.config.ts`
+  + `frontend/e2e/cockpit-smoke.spec.ts` (3 testes smoke). `@playwright/test`
+  adicionado a `package.json`. Job `e2e` no CI boota backend + roda os
+  testes; depende de `test`+`frontend-check`+`api-tests` verde.
+- **Backend smoke em hardware real.** Verificado em RTX 3060 / driver
+  595 / CUDA 13: 23/23 módulos importam, 9/9 endpoints retornam 200, GPU
+  detectada. Detalhes em `notes/smoke_2026-09-28.md`.
+- **Release notes** para `3.9.0-my.1` em `RELEASE_NOTES_3.9.0-my.1.md`.
+- **README** atualizado com a decomposição em hooks e versão bumped.
 
 ### ⬆️ Upstream divergence
 
