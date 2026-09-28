@@ -26,6 +26,7 @@ import { SettingsModal } from "../components/SettingsModal";
 import { NewProjectModal } from "../components/NewProjectModal";
 import { VideoDiagnosticWizard } from "../components/VideoDiagnosticWizard";
 import { StatusBar } from "../components/StatusBar";
+import { ConnectionModeBadge } from "../components/ConnectionModeBadge";
 
 export default function Home() {
   // Configuração e conexão com a API
@@ -62,7 +63,7 @@ export default function Home() {
   }, []);
 
   // Custom Hooks
-  const { jobs, activeJob, cancelJob, deleteJob, fetchJobs } = useJobs(apiUrl);
+  const { jobs, activeJob, cancelJob, deleteJob, fetchJobs, connectionMode } = useJobs(apiUrl);
   const { projects, fetchProjects, openProjectFolder, deleteProject, createProject } = useProjects(apiUrl);
   const { telemetry, hardwareInfo, availableProviders, fetchHardware } = useHardware(apiUrl);
 
@@ -1259,6 +1260,7 @@ export default function Home() {
         hardwareInfo={hardwareInfo}
         isBackendConnected={isBackendConnected}
         onRefreshHardware={fetchHardware}
+        connectionMode={connectionMode}
       />
     </div>
   );

@@ -1,12 +1,15 @@
 import React from "react";
 import { Cpu, RefreshCw } from "lucide-react";
 import { HardwareTelemetry } from "../types";
+import type { ConnectionMode } from "../hooks/useJobs";
+import { ConnectionModeBadge } from "./ConnectionModeBadge";
 
 interface StatusBarProps {
   telemetry?: HardwareTelemetry | null;
   hardwareInfo?: string;
   isBackendConnected: boolean;
   onRefreshHardware?: () => void;
+  connectionMode?: ConnectionMode;
 }
 
 export const StatusBar: React.FC<StatusBarProps> = ({
@@ -14,6 +17,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
   hardwareInfo,
   isBackendConnected,
   onRefreshHardware,
+  connectionMode,
 }) => {
   return (
     <footer className="h-8 border-t border-zinc-900 bg-zinc-950/95 backdrop-blur-md px-4 flex items-center justify-between flex-shrink-0 z-30 font-mono select-none">
@@ -39,6 +43,10 @@ export const StatusBar: React.FC<StatusBarProps> = ({
             Engine: {isBackendConnected ? "Online" : "Offline"}
           </span>
         </div>
+
+        <span className="text-zinc-700">|</span>
+
+        {connectionMode && <ConnectionModeBadge mode={connectionMode} />}
 
         <span className="text-zinc-700">|</span>
 

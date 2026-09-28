@@ -73,12 +73,30 @@ to these workflows, so behavior is identical between modes.
   browser can find the API without any user configuration.
 - **Explicit application context** (`cli` vs `ui`) is set once at startup and
   threaded through every config so divergent code paths are deterministic.
+- **State decomposition via custom React hooks** — the cockpit's
+  `page.tsx` originally had 78 `useState` calls (the biggest single
+  source of complexity in the codebase). These have been extracted into
+  seven purpose-built hooks in `frontend/src/hooks/`:
+  - `useStudioState` — typed, serializable state for the Studio tab
+    (sources, processors, output, mask, detection). 64 `useState`
+    collapsed into a single `StudioState` object.
+  - `useConfig` — system config (paths, memory, threads, log, providers)
+    with auto-fetch from `/api/config` and a typed `save()` action.
+  - `useWizard` — modal state for the video diagnostic wizard.
+  - `useJobs` — SSE + polling with `connectionMode` exposed for the UI.
+  - `useProjects`, `useHardware`, `usePresets` — feature-specific hooks.
+  After the refactor, `page.tsx` has only 8 `useState` (genuine local
+  UI state), 1.265 lines, and a single typed state object per concern.
 
 ### 5. Housekeeping
-- `facefusion/__init__.py` declares `version = "3.7.0-my.1"` and fork metadata.
+- `facefusion/__init__.py` declares `version = "3.9.0-my.1"` and fork metadata.
 - `.gitignore` hardened against test-scaffolding leaks (`.new_jobs_path_test/`,
   `out/`, `tmp/`, `frontend/.next/`, `frontend/out/`, `frontend/node_modules/`,
   local `*.ini` overrides, OS/editor noise).
+- CI hardened with 4 jobs: Python lint + tests (3 OS), frontend
+  type-check + build + lint, and a dedicated API tests job that runs
+  `test_api_endpoints.py`, `test_api_face_mapping.py`, and
+  `test_api_worker.py` in a clean Python 3.12 venv.
 - See [`CHANGELOG.md`](CHANGELOG.md) for the full per-commit history.
 
 ---
