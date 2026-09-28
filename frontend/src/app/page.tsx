@@ -9,6 +9,8 @@ import { useProjects } from "../hooks/useProjects";
 import { useHardware } from "../hooks/useHardware";
 import { usePresets } from "../hooks/usePresets";
 import { useStudioState } from "../hooks/useStudioState";
+import { useConfig } from "../hooks/useConfig";
+import { useWizard } from "../hooks/useWizard";
 import { ToastContainer } from "../components/ToastContainer";
 import { Header } from "../components/Header";
 import { SourceUploader } from "../components/SourceUploader";
@@ -275,15 +277,10 @@ export default function Home() {
   const setOutputAudioQuality = (v: number) => studio.patch("output", { audioQuality: v });
   const setOutputAudioVolume = (v: number) => studio.patch("output", { audioVolume: v });
 
-  // Estados que permanecem locais (não são "Studio" — são UI/auxiliares).
+  // Estados que permanecem locais (UI/auxiliares de layout).
   const [targetDimensions, setTargetDimensions] = useState<{ width: number; height: number } | null>(null);
   const [containerDimensions, setContainerDimensions] = useState<{ width: number; height: number } | null>(null);
   const targetContainerRef = useRef<HTMLDivElement>(null);
-
-  // Wizard / diagnóstico: ainda locais, podem migrar para hook próprio depois.
-  const [isWizardOpen, setIsWizardOpen] = useState<boolean>(false);
-  const [isDiagnosing, setIsDiagnosing] = useState<boolean>(false);
-  const [diagnosticReport, setDiagnosticReport] = useState<VideoDiagnosticReport | null>(null);
 
   // Lista estática de processors disponíveis (não é estado mutável).
   const availableProcessors = [
@@ -292,37 +289,34 @@ export default function Home() {
     "face_debugger", "frame_colorizer", "background_remover",
   ];
 
-  // Configurações do Sistema (ainda locais — migrar para useConfig em PR futura).
-  const [configTempPath, setConfigTempPath] = useState<string>(".temp");
-  const [configJobsPath, setConfigJobsPath] = useState<string>(".jobs");
-  const [configMemoryStrategy, setConfigMemoryStrategy] = useState<string>("balanced");
-  const [configThreadCount, setConfigThreadCount] = useState<number>(4);
-  const [configLogLevel, setConfigLogLevel] = useState<string>("info");
-  const [configProviders, setConfigProviders] = useState<string[]>([]);
-  const [isSavingConfig, setIsSavingConfig] = useState<boolean>(false);
+  // Configurações do sistema: hook agregador com fetch inicial + save action.
+  const configHook = useConfig(apiUrl);
+  const {
+    temp_path: configTempPath,
+    jobs_path: configJobsPath,
+    video_memory_strategy: configMemoryStrategy,
+    execution_thread_count: configThreadCount,
+    log_level: configLogLevel,
+    execution_providers: configProviders,
+    is_saving: isSavingConfig,
+  } = configHook.config;
+  const setConfigTempPath = (v: string) => configHook.set("temp_path", v);
+  const setConfigJobsPath = (v: string) => configHook.set("jobs_path", v);
+  const setConfigMemoryStrategy = (v: string) => configHook.set("video_memory_strategy", v);
+  const setConfigThreadCount = (v: number) => configHook.set("execution_thread_count", v);
+  const setConfigLogLevel = (v: string) => configHook.set("log_level", v);
+  const setConfigProviders = (v: string[]) => configHook.set("execution_providers", v);
+  const setIsSavingConfig = (v: boolean) => configHook.set("is_saving", v);
 
-  // Carregar configurações do backend
-  useEffect(() => {
-    if (!apiUrl && apiUrl !== "") return;
-    const fetchConfig = async () => {
-      try {
-        const url = formatApiUrl(apiUrl, "/api/config");
-        const res = await fetch(url);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.temp_path) setConfigTempPath(data.temp_path);
-          if (data.jobs_path) setConfigJobsPath(data.jobs_path);
-          if (data.video_memory_strategy) setConfigMemoryStrategy(data.video_memory_strategy);
-          if (data.execution_thread_count) setConfigThreadCount(data.execution_thread_count);
-          if (data.log_level) setConfigLogLevel(data.log_level);
-          if (data.execution_providers) setConfigProviders(data.execution_providers);
-        }
-      } catch {
-        // use defaults
-      }
-    };
-    fetchConfig();
-  }, [apiUrl]);
+  // Wizard de diagnóstico: hook encapsula visibilidade + estado do relatório.
+  const wizard = useWizard();
+  const { isOpen: isWizardOpen, isDiagnosing, report: diagnosticReport } = wizard;
+  const setIsWizardOpen = wizard.setIsOpen;
+  const setIsDiagnosing = wizard.setLoading;
+  const setDiagnosticReport = wizard.setReport;
+
+  // Configurações são carregadas automaticamente pelo hook useConfig
+  // (useEffect interno dispara fetch inicial em mount e em mudança de apiUrl).
 
   // Atualizar dimensões do container de destino para cálculo das caixas faciais
   const updateContainerDimensions = useCallback(() => {

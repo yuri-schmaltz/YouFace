@@ -1,5 +1,5 @@
 {
     "apiUrl": "",
-    "apiUrlAbsolute": "http://localhost:8000",
+    "apiUrlAbsolute": "http://localhost:8001",
     "apiPathPrefix": "/api"
 }
