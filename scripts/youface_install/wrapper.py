@@ -45,9 +45,10 @@ from hardware import HardwareProfile, detect, recommend_flavor  # noqa: E402
 from requirements_helper import RequirementsReport, parse as parse_reqs  # noqa: E402
 
 
-UPSTREAM_INSTALLER_PATH = os.path.join(
-    os.path.dirname(_HERE), "..", "facefusion", "installer.py"
-)
+# Não usamos mais UPSTREAM_INSTALLER_PATH — invocamos via
+# `python -m facefusion.installer` para evitar o sombreamento de
+# `facefusion/types.py` sobre o stdlib `types` quando o script é
+# executado diretamente (ver _invoke_upstream).
 
 
 def _print_section(title: str) -> None:
@@ -170,10 +171,142 @@ def _dry_run_commands(flavor: str, force_reinstall: bool,
     return cmds
 
 
+def _detect_pep668() -> bool:
+    """Retorna True se o Python atual é PEP 668 (externally-managed).
+
+    Em sistemas Debian 12+/Ubuntu 23.04+/Mint 22+ o Python é gerenciado
+    pelo sistema e pip se recusa a instalar pacotes sem --break-system-packages
+    ou sem um venv.
+    """
+    if sys.prefix != sys.base_prefix:
+        return False  # estamos em venv, não é problema
+    # Tag do gerenciador: dpkg (Debian/Ubuntu/Mint), rpm (Fedora), brew (macOS)
+    em_file = os.path.join(sys.base_prefix, "lib",
+                           f"python{sys.version_info.major}.{sys.version_info.minor}",
+                           "EXTERNALLY-MANAGED")
+    if os.path.exists(em_file):
+        return True
+    # Fallback: tenta um pip install dummy
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "pip", "install", "--dry-run", "--quiet",
+             "youface-pep668-probe-nonexistent-pkg"],
+            capture_output=True, text=True, timeout=15,
+        )
+        if "externally-managed" in proc.stderr.lower():
+            return True
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        pass
+    return False
+
+
+def _verify_onnxruntime_installed(flavor: str) -> bool:
+    """Confere se o onnxruntime do flavor escolhido está realmente instalado."""
+    expected_pkgs = {
+        "default": "onnxruntime",
+        "cuda@12": "onnxruntime-gpu",
+        "cuda@13": "onnxruntime-gpu",
+        "openvino": "onnxruntime-openvino",
+        "rocm": "onnxruntime-rocm",
+        "migraphx": "onnxruntime-migraphx",
+        "directml": "onnxruntime-directml",
+        "qnn": "onnxruntime-qnn",
+    }
+    pkg = expected_pkgs.get(flavor, "onnxruntime")
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "pip", "show", pkg],
+            capture_output=True, text=True, timeout=10,
+        )
+        return proc.returncode == 0
+    except (FileNotFoundError, subprocess.TimeoutExpired, OSError):
+        return False
+
+
+def _install_directly(flavor: str, force_reinstall: bool,
+                       reqs: RequirementsReport,
+                       break_system_packages: bool = False,
+                       python_exe: str | None = None) -> tuple[int, str]:
+    """Fallback robusto: roda pip install diretamente bypassing o upstream.
+
+    Usado quando o upstream installer falha silenciosamente em PEP 668 ou
+    quando o smoke test pós-install detecta que nada foi instalado.
+    """
+    flavor_versions = {
+        "default": ("onnxruntime", "1.29.0"),
+        "cuda@12": ("onnxruntime-gpu", "1.24.4"),
+        "cuda@13": ("onnxruntime-gpu", "1.29.0"),
+        "openvino": ("onnxruntime-openvino", "1.24.1"),
+        "rocm": ("onnxruntime-rocm", "1.22.2.post3"),
+        "migraphx": ("onnxruntime-migraphx", "1.27.1"),
+        "directml": ("onnxruntime-directml", "1.24.4"),
+        "qnn": ("onnxruntime-qnn", "2.5.0"),
+    }
+    ort_pkg, ort_ver = flavor_versions.get(flavor, ("onnxruntime", "1.29.0"))
+
+    py = python_exe or sys.executable
+    print()
+    print(f"=== Fallback: pip install direto (bypass upstream) via {py} ===")
+
+    # Uninstall any pre-existing onnxruntime* flavors (best effort)
+    for old in ["onnxruntime", "onnxruntime-gpu", "onnxruntime-openvino",
+                "onnxruntime-directml", "onnxruntime-rocm", "onnxruntime-migraphx",
+                "onnxruntime-qnn"]:
+        subprocess.run(
+            [py, "-m", "pip", "uninstall", old, "-y", "-q"],
+            capture_output=True, check=False,
+        )
+
+    cmd = [py, "-m", "pip", "install"]
+    if force_reinstall:
+        cmd.append("--force-reinstall")
+    pep668 = _detect_pep668() if python_exe is None else False  # venv already sidesteps
+    if break_system_packages or pep668:
+        if pep668:
+            print("[pep668] detected externally-managed environment — adding "
+                  "--break-system-packages")
+        else:
+            print("[bsp] --break-system-packages explicit")
+        cmd.append("--break-system-packages")
+    cmd.extend(reqs.install_lines)
+    cmd.append(f"{ort_pkg}=={ort_ver}")
+
+    print(f"$ {' '.join(cmd)}")
+    print()
+    proc = subprocess.run(cmd, capture_output=False)
+    return proc.returncode, ort_pkg
+
+
 def _invoke_upstream(flavor: str, force_reinstall: bool,
-                     skip_conda: bool, extra_args: Sequence[str]) -> int:
-    """Roda o instalador upstream com os args certos. Retorna exit code."""
-    cmd = [sys.executable, UPSTREAM_INSTALLER_PATH, flavor]
+                     skip_conda: bool,
+                     break_system_packages: bool = False,
+                     use_venv: bool = False,
+                     extra_args: Sequence[str] = ()) -> int:
+    """Roda o instalador upstream com os args certos. Retorna exit code.
+
+    Importante: usamos `python -m facefusion.installer` em vez de
+    `python facefusion/installer.py` direto. O segundo modo adiciona
+    `facefusion/` ao `sys.path[0]`, o que faz com que o arquivo
+    `facefusion/types.py` sombreie o módulo stdlib `types`. Aí qualquer
+    import de stdlib que dependa de `types.GenericAlias` (subprocess,
+    functools, threading, enum) cai em circular import. O `-m` mantém
+    o project root como sys.path[0] e importa `facefusion.installer`
+    como módulo do package — sem sombreamento.
+
+    Após o upstream rodar, **verificamos** se o pacote onnxruntime foi
+    realmente instalado. Em ambientes PEP 668 (Debian 12+, Ubuntu 23.04+,
+    Mint 22+) o pip recusa instalar system-wide sem --break-system-packages
+    — e o upstream installer não trata isso. O fallback detecta e aplica.
+
+    Se --use-venv for passado, cria .venv e usa o pip dele (sidestep
+    completo de PEP 668).
+    """
+    # Caso 1: --use-venv → cria .venv e instala lá
+    if use_venv:
+        return _install_in_venv(flavor, force_reinstall, reqs=parse_reqs("requirements.txt"))
+
+    # Caso 2: tentar upstream normalmente
+    cmd = [sys.executable, "-m", "facefusion.installer", flavor]
     if force_reinstall:
         cmd.append("--force-reinstall")
     if skip_conda:
@@ -181,7 +314,73 @@ def _invoke_upstream(flavor: str, force_reinstall: bool,
     cmd.extend(extra_args)
     print()
     print(f"$ {' '.join(cmd)}")
-    return subprocess.call(cmd)
+    rc = subprocess.call(cmd)
+
+    # Smoke test: o pacote realmente foi instalado?
+    print()
+    print("=== Verifying install ===")
+    if _verify_onnxruntime_installed(flavor):
+        print(f"[ok] onnxruntime do flavor {flavor} está instalado.")
+        return rc
+
+    print(f"[warn] onnxruntime do flavor {flavor} NÃO foi instalado "
+          "(provavelmente PEP 668 / externally-managed).")
+    print("[fallback] pip install direto + auto-detect PEP 668...")
+    reqs = parse_reqs("requirements.txt")
+    rc2, pkg = _install_directly(flavor, force_reinstall, reqs,
+                                  break_system_packages=break_system_packages)
+    if _verify_onnxruntime_installed(flavor):
+        print(f"[ok] {pkg} instalado via fallback.")
+        return rc2
+    print(f"[fatal] {pkg} continua ausente após fallback.")
+    return 1
+
+
+def _install_in_venv(flavor: str, force_reinstall: bool,
+                      reqs: RequirementsReport,
+                      venv_path: str = ".venv") -> int:
+    """Cria .venv (se não existe) e instala tudo lá.
+
+    Sidestep completo de PEP 668 — o pip do venv é livre para instalar
+    sem --break-system-packages.
+    """
+    if not os.path.exists(venv_path):
+        print(f"[venv] criando {venv_path}...")
+        rc = subprocess.call([sys.executable, "-m", "venv", venv_path])
+        if rc != 0:
+            print(f"[fatal] falha ao criar {venv_path}")
+            return rc
+    elif os.path.isdir(venv_path) and not _is_venv_populated(venv_path):
+        print(f"[venv] {venv_path} existe mas vazio — pulando criação")
+    else:
+        print(f"[venv] reusando {venv_path} existente")
+
+    py_exe = os.path.join(venv_path, "bin", "python")
+    if not os.path.exists(py_exe):
+        py_exe = os.path.join(venv_path, "Scripts", "python.exe")  # Windows
+    if not os.path.exists(py_exe):
+        print(f"[fatal] python não encontrado em {venv_path}")
+        return 1
+
+    rc, pkg = _install_directly(flavor, force_reinstall, reqs, python_exe=py_exe)
+    if rc != 0:
+        return rc
+    print()
+    print("=== venv pronto ===")
+    print(f"Ative com: source {venv_path}/bin/activate")
+    print(f"Depois:    python run_api.py")
+    return 0
+
+
+def _is_venv_populated(venv_path: str) -> bool:
+    """Heurística: o venv tem um pip dentro?"""
+    for candidate in [
+        os.path.join(venv_path, "bin", "pip"),
+        os.path.join(venv_path, "Scripts", "pip.exe"),
+    ]:
+        if os.path.exists(candidate):
+            return True
+    return False
 
 
 def _validate_preflight(profile: HardwareProfile,
@@ -207,6 +406,15 @@ def _validate_preflight(profile: HardwareProfile,
         warnings.append(f"[FATAL] {msg}")
     else:
         print(f"[ok] {msg}")
+
+    # PEP 668 detection — auto-fallback will add --break-system-packages
+    if _detect_pep668():
+        warnings.append(
+            "[info] PEP 668 detected — fallback will use --break-system-packages "
+            "(or use --use-venv to create .venv instead)"
+        )
+    else:
+        print("[ok] not PEP 668 — pip install system-wide is allowed")
 
     # Mismatch torch/CUDA
     if profile.torch_installed and profile.torch_cuda_version and profile.cuda_runtime_version:
@@ -304,7 +512,9 @@ def cmd_install(args: argparse.Namespace) -> int:
             return 1
 
     return _invoke_upstream(flavor, args.force_reinstall, args.skip_conda,
-                             args.passthrough)
+                             break_system_packages=args.break_system_packages,
+                             use_venv=args.use_venv,
+                             extra_args=args.passthrough)
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -336,6 +546,13 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Pass --skip-conda to upstream installer")
     p.add_argument("--yes", "-y", action="store_true",
                    help="Skip confirmation prompt")
+    p.add_argument("--break-system-packages", action="store_true",
+                   help="Force --break-system-packages on PEP 668 systems "
+                        "(Debian 12+/Ubuntu 23.04+/Mint 22+). The wrapper "
+                        "auto-detects this and applies it only if needed.")
+    p.add_argument("--use-venv", action="store_true",
+                   help="Create a .venv next to install.py and install there "
+                        "instead of touching the system Python.")
     p.add_argument("--passthrough", nargs=argparse.REMAINDER, default=[],
                    help="Extra args passed verbatim to the upstream installer")
     return p

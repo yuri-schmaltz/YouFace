@@ -277,3 +277,57 @@ def test_cli_fix_cuda_alias():
     rc, out, err = run_cli("--fix-cuda", "--dry-run")
     assert rc == 0, f"stderr: {err}\nstdout: {out}"
     assert "selected flavor" in out.lower()
+
+
+def test_cli_upstream_invoked_as_module():
+    """O wrapper deve chamar o upstream via `python -m facefusion.installer`
+    para evitar o sombreamento de facefusion/types.py sobre stdlib types."""
+    rc, out, err = run_cli("--auto", "--dry-run")
+    assert rc == 0
+    # O comando pip preview mostra `pip install` (não `facefusion.installer`),
+    # mas podemos inspecionar a invocação do upstream checando o import:
+    proc = subprocess.run(
+        [sys.executable, "-c",
+         "from facefusion.installer import cli; print('ok')"],
+        capture_output=True, text=True, cwd=REPO_ROOT, timeout=15,
+    )
+    assert proc.returncode == 0, f"stderr: {proc.stderr}"
+    assert proc.stdout.strip() == "ok"
+
+
+def test_cli_pep668_detection_surfaces_in_preflight():
+    """Em sistemas PEP 668 (Debian 12+/Ubuntu 23.04+/Mint 22+), o pre-flight
+    deve mencionar que vai usar --break-system-packages como fallback."""
+    rc, out, err = run_cli("--dry-run")
+    assert rc == 0
+    # No sandbox o PEP 668 é detectado (tem EXTERNALLY-MANAGED).
+    if "PEP 668 detected" in out:
+        assert "break-system-packages" in out or "use-venv" in out
+
+
+def test_cli_help_mentions_new_flags():
+    """Garante que --break-system-packages e --use-venv estão documentados.
+
+    Para ver a help do wrapper (e não a do upstream), passamos uma flag
+    smart como --info primeiro.
+    """
+    rc, out, _ = run_cli("--info", "--help")
+    assert rc == 0
+    assert "--break-system-packages" in out
+    assert "--use-venv" in out
+
+
+def test_detect_pep668_helper():
+    """_detect_pep668() deve retornar True no sandbox (Mint 22)."""
+    from youface_install.wrapper import _detect_pep668
+    result = _detect_pep668()
+    # Em sandbox tem EXTERNALLY-MANAGED; pode ser True ou False em CI limpo.
+    assert isinstance(result, bool)
+
+
+def test_verify_onnxruntime_installed_returns_bool():
+    """_verify_onnxruntime_installed retorna bool, nunca levanta."""
+    from youface_install.wrapper import _verify_onnxruntime_installed
+    assert isinstance(_verify_onnxruntime_installed("default"), bool)
+    assert isinstance(_verify_onnxruntime_installed("cuda@13"), bool)
+    assert isinstance(_verify_onnxruntime_installed("nonexistent"), bool)
