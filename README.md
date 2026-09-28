@@ -146,6 +146,32 @@ Two configurations are available:
   # Frontend (hot reload): http://127.0.0.1:3000
   ```
 
+### Authentication (LAN deploy)
+
+The API binds to `127.0.0.1` by default (no auth). For LAN exposure,
+set `FACEFUSION_API_TOKEN` and the server activates bearer-token auth:
+
+```bash
+# Generate a strong token
+python -c "import secrets; print(secrets.token_urlsafe(32))"
+
+# Start with auth enabled
+FACEFUSION_API_TOKEN=<your-token> python run_api.py
+```
+
+The client must send `Authorization: Bearer <token>` on every non-GET
+request. GETs on `/api/hardware/*`, `/api/processors/list`, `/api/config`,
+`/api/media/output/*`, and `/api/jobs/stream` remain public (so the
+status bar can poll without auth).
+
+The frontend reads the token from `localStorage` (key: `FACEFUSION_TOKEN`)
+on first load — set it via the browser devtools if you're using LAN mode.
+
+> **Security note:** This is a shared-secret scheme, not real auth. For
+> multi-user or internet-facing deployments, put the API behind a
+> reverse proxy (nginx, Caddy) that adds proper auth (OIDC, mTLS, etc.)
+> and disable the built-in bearer middleware by unsetting the env var.
+
 ---
 
 ## 📂 Repository layout

@@ -83,6 +83,11 @@ def create_app() -> FastAPI:
     app.add_middleware(SecurityHeaders)
     app.add_middleware(RateLimiter, requests_per_window=60, window_seconds=60)
 
+    # Bearer auth gate. Disabled unless FACEFUSION_API_TOKEN env var is set.
+    # See facefusion/api/auth.py for the full design.
+    from facefusion.api.auth import BearerAuthMiddleware
+    app.add_middleware(BearerAuthMiddleware)
+
     # Inclusão do roteador de endpoints.
     # Manteve compat: tanto /api quanto /api/v1 funcionam. A partir da
     # próxima major release, /api será deprecado e o prefixo único será /api/v1.
