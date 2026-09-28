@@ -65,6 +65,31 @@ jobs:
   # oficial pode nao trazer dependendo da politica de pin.
   - run: pip install fastapi 'uvicorn[standard]' sqlalchemy python-multipart psutil httpx pytest
   - run: pytest
+ api-tests:
+  needs: [ test, frontend-check ]
+  runs-on: ubuntu-latest
+  steps:
+  - name: Checkout
+    uses: actions/checkout@v4
+  - name: Set up Python 3.12
+    uses: actions/setup-python@v5
+    with:
+     python-version: '3.12'
+  - run: pip install -r requirements.txt
+  - run: pip install pytest httpx
+  - name: API endpoint tests
+    run: pytest tests/test_api_endpoints.py tests/test_api_face_mapping.py -v --no-header
+  - name: API worker test (smoke)
+    run: pytest tests/test_api_worker.py -v --no-header
+  - name: Upload API test results
+    if: always()
+    uses: actions/upload-artifact@v4
+    with:
+      name: api-test-results
+      path: |
+        *.xml
+        .pytest_cache
+      if-no-files-found: ignore
  report:
   needs: test
   runs-on: ubuntu-latest

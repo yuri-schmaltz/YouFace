@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "my-facefusion"
-version = "3.7.0-my.1"
+version = "3.8.3-my.1"
 description = "Next-generation face manipulation application with decoupled architecture"
 authors = ["Yuri Schmaltz <yurischmaltz@gmail.com>"]
 readme = "README.md"
