@@ -1,0 +1,37 @@
+# Pre-commit hooks para o projeto YouFace.
+# Instale com: `pip install pre-commit && pre-commit install`
+# Rode manualmente: `pre-commit run --all-files`
+#
+# Cobertura:
+#   - Python: trailing whitespace, end-of-file, large files
+#   - Python: black formatting check (fork do padrão)
+#   - Python: flake8 lint
+#   - YAML: parse check (catches malformed configs)
+#   - General: merge conflict markers
+#
+# Nao cobrimos (intencionalmente):
+#   - mypy: muito lento, já roda no CI
+#   - eslint/tsc: dependem de npm install, já rodam no CI
+#   - pytest: já roda no CI
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.(md|json)$'
+      - id: end-of-file-fixer
+        exclude: '\.(md|json)$'
+      - id: check-merge-conflict
+      - id: check-yaml
+        exclude: '^.*/node_modules/'
+      - id: check-json
+        exclude: '^.*/node_modules/'
+      - id: check-added-large-files
+        args: ['--maxkb=1024']
+      - id: detect-private-key
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        files: '^facefusion/.*\.py$|^tests/.*\.py$|^run_api\.py$|^install\.py$'
+        args: ['--max-line-length=120', '--extend-ignore=E203,W503,E501']

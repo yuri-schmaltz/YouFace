@@ -1,0 +1,46 @@
+version: '3.8'
+
+# Compose para desenvolvimento local.
+# Diferente do `docker-compose.yml` de produção:
+#   - Sem GPU (volume mount para hot-reload)
+#   - Backend e frontend em serviços separados
+#   - Código montado como volume (mudanças no host refletem no container)
+#
+# Uso:
+#   docker compose -f docker-compose.dev.yml up
+#   # API em http://127.0.0.1:8000
+#   # Frontend em http://127.0.0.1:3000 (hot reload)
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: youface-backend-dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+      - /app/frontend/node_modules  # evita override do node_modules local
+      - ./.jobs:/app/.jobs
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: python run_api.py
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: youface-frontend-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app/frontend
+      - /app/frontend/node_modules
+      - /app/frontend/.next
+    working_dir: /app/frontend
+    command: npm run dev
+    depends_on:
+      - backend
+    restart: unless-stopped

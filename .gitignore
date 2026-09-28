@@ -42,3 +42,9 @@ Thumbs.db
 # Local config overrides (avoid leaking personal paths)
 facefusion.ini.local
 *.local.ini
+
+# Playwright E2E artifacts
+frontend/playwright-report/
+frontend/test-results/
+frontend/blob-report/
+frontend/playwright/.cache/
