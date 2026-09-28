@@ -130,9 +130,21 @@ python facefusion.py job-create …    # see `python facefusion.py --help` for t
 ```
 
 ### Docker
-A `Dockerfile` and `docker-compose.yml` are provided (same shape as upstream
-but extended to build the frontend in a multi-stage setup). See
-[`docs/goal/`](docs/goal/) for the planned multi-stage layout.
+
+Two configurations are available:
+
+- **Production** (`Dockerfile` + `docker-compose.yml`): Multi-stage build with
+  CUDA 11.8 runtime. Builds the Next.js static export and serves it via
+  FastAPI. For deployment on a GPU workstation.
+
+- **Development** (`Dockerfile.dev` + `docker-compose.dev.yml`): Slim Python
+  3.12 image, mounts source as volume for hot-reload, no CUDA, two-service
+  compose (backend + frontend). For local iteration.
+  ```bash
+  docker compose -f docker-compose.dev.yml up
+  # API: http://127.0.0.1:8000
+  # Frontend (hot reload): http://127.0.0.1:3000
+  ```
 
 ---
 

@@ -83,8 +83,11 @@ def create_app() -> FastAPI:
     app.add_middleware(SecurityHeaders)
     app.add_middleware(RateLimiter, requests_per_window=60, window_seconds=60)
 
-    # Inclusão do roteador de endpoints
+    # Inclusão do roteador de endpoints.
+    # Manteve compat: tanto /api quanto /api/v1 funcionam. A partir da
+    # próxima major release, /api será deprecado e o prefixo único será /api/v1.
     app.include_router(api_router, prefix="/api")
+    app.include_router(api_router, prefix="/api/v1")
 
     # Servir os arquivos estáticos do frontend Next.js exportado se existir
     import os
