@@ -1,4 +1,4 @@
 name = "facefusion"
-version = "3.8.3-my.1"
+version = "3.9.0-my.1"
 fork_of = "facefusion/facefusion"
-fork_base = "3.8.3"
+fork_base = "3.9.0"
