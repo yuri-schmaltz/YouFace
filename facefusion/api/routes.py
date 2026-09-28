@@ -1205,25 +1205,43 @@ def cancel_job(job_id: str, db: Session = Depends(get_db)) -> Dict[str, Any]:
 
 
 @router.post("/media/cleanup")
-def cleanup_temporary_media() -> Dict[str, Any]:
+def cleanup_temporary_media(max_age_seconds: int = 3600) -> Dict[str, Any]:
     """
     Exclui arquivos temporários de crops e previews efêmeros para evitar esgotamento de disco.
+
+    Args:
+        max_age_seconds: idade máxima (em segundos) para considerar um arquivo
+                         "temporário". Default 1h — alinhado com o ciclo típico
+                         de preview/analyze do cockpit. Use 0 para limpar
+                         tudo (legado).
     """
+    import time
     try:
         jobs_path = state_manager.get_item("jobs_path") or get_default_path('data')
         uploads_dir = os.path.abspath(os.path.join(jobs_path, "uploads"))
         crops_dir = os.path.join(uploads_dir, "crops")
         cleaned_count = 0
+        skipped_recent = 0
+        now = time.time()
         if os.path.exists(crops_dir):
             for fname in os.listdir(crops_dir):
                 fpath = os.path.join(crops_dir, fname)
                 try:
-                    if os.path.isfile(fpath):
-                        os.remove(fpath)
-                        cleaned_count += 1
+                    if not os.path.isfile(fpath):
+                        continue
+                    if max_age_seconds > 0:
+                        age = now - os.path.getmtime(fpath)
+                        if age < max_age_seconds:
+                            skipped_recent += 1
+                            continue
+                    os.remove(fpath)
+                    cleaned_count += 1
                 except Exception:
                     pass
-        return {"status": "success", "message": f"{cleaned_count} arquivos de cache/crops removidos com sucesso."}
+        msg = f"{cleaned_count} arquivos removidos"
+        if skipped_recent:
+            msg += f", {skipped_recent} mantidos (< {max_age_seconds}s)"
+        return {"status": "success", "message": msg, "removed": cleaned_count, "kept": skipped_recent}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Erro na limpeza de mídia temporária: {str(e)}")
 

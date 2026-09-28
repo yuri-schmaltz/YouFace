@@ -27,6 +27,11 @@ export async function resolveApiUrl(): Promise<string> {
     const res = await fetch("/config.json");
     if (res.ok) {
       const data = await res.json();
+      // Caminho relativo preferido (mesma origem / reverse proxy) — P2-3 do SWOT.
+      if (typeof data.apiUrl === "string" && data.apiUrl === "") {
+        cachedApiUrl = "";
+        return cachedApiUrl;
+      }
       if (data.apiUrl) {
         // Se a apiUrl configurada for localhost mas o usuário estiver acessando via IP da LAN
         try {

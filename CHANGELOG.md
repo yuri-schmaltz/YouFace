@@ -100,6 +100,56 @@ strategy and reproduction commands.
 
 ---
 
+## [Unreleased] — Sprint 2026-09-28
+
+**Status:** Em curso. Branch de merge `merge/upstream-3.8.3` preparada, sem
+merge aplicado. Ver [`notes/upstream_divergence_2026-09-28.md`](notes/upstream_divergence_2026-09-28.md).
+
+### 🛠 Changed
+
+- **P2-3 — Suporte a LAN / paths relativos.** O backend grava agora
+  `apiUrl: ""` (caminho relativo) em `frontend/public/config.json`,
+  adicionando `apiUrlAbsolute` para compatibilidade. O frontend (`utils/api.ts`)
+  prefere caminho relativo quando disponível, destravando deploy via reverse
+  proxy e acesso via IP de LAN sem trocar `config.json` manualmente.
+- **P1-4 — Cleanup age-based.** `POST /media/cleanup` aceita agora
+  `max_age_seconds` (default 3600s). Arquivos mais novos que o limite são
+  preservados para evitar race com jobs em curso.
+- **P1-1 — Decomposição do `page.tsx`.** Adicionado o hook agregador
+  `frontend/src/hooks/useStudioState.ts` que isola 50+ `useState` do Studio.
+  Próximo passo: migrar `page.tsx` para consumir esse hook.
+- **P0-1 — Piso de Python subido para 3.12** em `pyproject.toml` e `Dockerfile`.
+  CI já rodava em 3.12 — alinhamento sem regressão.
+
+### 🐛 Fixed
+
+- **P3-2 — CI endurecido.** Adicionado `npx tsc --noEmit` (type-check TS),
+  `npm run build` (next export) e `npm run lint` (eslint estrito, sem `|| true`)
+  no job `frontend-check`. Jobs `test` e `report` agora instalam as deps
+  fork (`fastapi`, `uvicorn[standard]`, `sqlalchemy`, `python-multipart`,
+  `psutil`, `httpx`) que o `install.py` oficial pode não trazer.
+
+### ⬆️ Upstream divergence — atualizado
+
+| Upstream tag | Status |
+|---|---|
+| `3.6.0` | ✅ merged (`57fcb86`) |
+| `3.6.1` | ✅ merged (`5b7d145`) — fork base |
+| `3.7.0` | ❌ pendente |
+| `3.7.1` | ❌ pendente |
+| `3.8.0` | ❌ pendente (hotfix memory leak) |
+| `3.8.1` | ❌ pendente |
+| `3.8.2` | ❌ pendente |
+| `3.8.3` | ❌ pendente |
+| `3.9.0` | ❌ pendente (load voice extractor on every processor) |
+
+Branch `merge/upstream-3.8.3` está pronta localmente com os remotes
+configurados (`origin` + `upstream`), aguardando merge manual. Apenas 8 commits
+upstream entre `3.7.1` e `master`, mudança majoritariamente em
+`processors/modules/*` — baixo risco de conflito.
+
+---
+
 ## Pre-fork history
 
 Inherited from upstream `facefusion/facefusion`. See upstream

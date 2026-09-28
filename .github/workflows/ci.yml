@@ -28,11 +28,24 @@ jobs:
     uses: actions/setup-node@v4
     with:
       node-version: 20
-  - name: Install and Lint Frontend
+  - name: Install dependencies
     working-directory: ./frontend
-    run: |
-      npm install
-      npm run lint || true
+    run: npm ci
+  - name: Lint (eslint)
+    working-directory: ./frontend
+    run: npm run lint
+  - name: TypeScript type-check
+    working-directory: ./frontend
+    run: npx --no-install tsc --noEmit
+  - name: Build (next export)
+    working-directory: ./frontend
+    run: npm run build
+  - name: Upload frontend/out as artifact
+    uses: actions/upload-artifact@v4
+    with:
+      name: frontend-out
+      path: frontend/out
+      if-no-files-found: warn
  test:
   strategy:
    matrix:
@@ -48,7 +61,9 @@ jobs:
     with:
      python-version: '3.12'
   - run: python install.py default --skip-conda
-  - run: pip install pytest
+  # Garantir deps do fork (FastAPI/uvicorn/sqlalchemy) que o install.py
+  # oficial pode nao trazer dependendo da politica de pin.
+  - run: pip install fastapi 'uvicorn[standard]' sqlalchemy python-multipart psutil httpx pytest
   - run: pytest
  report:
   needs: test
@@ -66,6 +81,7 @@ jobs:
   - run: pip install coveralls
   - run: pip install pytest
   - run: pip install pytest-cov
+  - run: pip install fastapi 'uvicorn[standard]' sqlalchemy python-multipart psutil httpx
   - run: pytest tests --cov facefusion
   - run: coveralls --service github
     env:

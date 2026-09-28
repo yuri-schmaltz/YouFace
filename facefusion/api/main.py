@@ -125,7 +125,15 @@ def write_frontend_config(port: int) -> None:
     frontend_public_dir = os.path.join(root_dir, "frontend", "public")
     frontend_out_dir = os.path.join(root_dir, "frontend", "out")
     
-    config_data = {"apiUrl": f"http://localhost:{port}"}
+    # Caminho relativo — o frontend passa a usar `/api/...` na mesma origem,
+    # o que destrava LAN, proxy reverso e HTTPS compartilhado.
+    # Mantemos compatibilidade com resolvers antigos gravando tambem a URL
+    # absoluta em `apiUrlAbsolute` (lida de forma opcional pelo frontend).
+    config_data = {
+        "apiUrl": "",
+        "apiUrlAbsolute": f"http://localhost:{port}",
+        "apiPathPrefix": "/api",
+    }
     
     if os.path.exists(frontend_public_dir):
         config_path = os.path.join(frontend_public_dir, "config.json")
