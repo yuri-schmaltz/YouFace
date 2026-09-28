@@ -33,6 +33,17 @@ import { VideoDiagnosticWizard } from "../components/VideoDiagnosticWizard";
 import { StatusBar } from "../components/StatusBar";
 import { ConnectionModeBadge } from "../components/ConnectionModeBadge";
 
+/**
+ * React's `Dispatch<SetStateAction<T>>` accepts either a value or an updater
+ * function `(prev: T) => T`. Our wrapper setters below bridge the
+ * `studio.set(key, value)` API to that contract, so callers can write
+ * `setSourceItems(prev => [...prev, x])` instead of
+ * `setSourceItems(studio.state.sourceItems.concat(x))`.
+ */
+type Updater<T> = T | ((prev: T) => T);
+const applyUpdater = <T,>(value: Updater<T>, current: T): T =>
+  typeof value === "function" ? (value as (prev: T) => T)(current) : value;
+
 export default function Home() {
   // Configuração e conexão com a API
   const [apiUrl, setApiUrl] = useState<string>(getInitialApiUrl());
@@ -47,17 +58,17 @@ export default function Home() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const showToast = useCallback((type: Toast["type"], title: string, message?: string) => {
     const id = Math.random().toString(36).substring(2, 9);
-    setToasts(prev => [...prev, { id, type, title, message }]);
+    setToasts((prev: Toast[]) => [...prev, { id, type, title, message }]);
     setTimeout(() => {
-      setToasts(prev => prev.map(t => (t.id === id ? { ...t, exiting: true } : t)));
+      setToasts((prev: Toast[]) => prev.map((t: Toast) => (t.id === id ? { ...t, exiting: true } : t)));
       setTimeout(() => {
-        setToasts(prev => prev.filter(t => t.id !== id));
+        setToasts((prev: Toast[]) => prev.filter((t: Toast) => t.id !== id));
       }, 300);
     }, 4000);
   }, []);
 
   const dismissToast = useCallback((id: string) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
+    setToasts((prev: Toast[]) => prev.filter((t: Toast) => t.id !== id));
   }, []);
 
   // Inicializar API URL dinâmica
@@ -162,7 +173,10 @@ export default function Home() {
 
   // Wrapper setters para manter compatibilidade com o resto do componente.
   // Cada setter é apenas um alias para `studio.set` — zero overhead.
-  const setSourceItems = (v: SourceItem[]) => studio.set("sourceItems", v);
+  // Setters that callers use with `prev => ...` updater callbacks accept
+  // `Updater<T>` so the `prev` callback shape works.
+  const setSourceItems = (v: Updater<SourceItem[]>) =>
+    studio.set("sourceItems", applyUpdater(v, studio.state.sourceItems));
   const setSourceImageFullPath = (v: string | null) => studio.set("sourceImageFullPath", v);
   const setTargetMedia = (v: string | null) => studio.set("targetMedia", v);
   const setTargetMediaFullPath = (v: string | null) => studio.set("targetMediaFullPath", v);
@@ -171,9 +185,11 @@ export default function Home() {
   const setDetectedTargetFaces = (v: DetectedFace[]) => studio.set("detectedTargetFaces", v);
   const setIsAnalyzingTargetFaces = (v: boolean) => studio.set("isAnalyzingTargetFaces", v);
   const setSelectedFaceForModal = (v: DetectedFace | null) => studio.set("selectedFaceForModal", v);
-  const setFaceMappings = (v: Record<number, string>) => studio.set("faceMappings", v);
+  const setFaceMappings = (v: Updater<Record<number, string>>) =>
+    studio.set("faceMappings", applyUpdater(v, studio.state.faceMappings));
   const setReferenceFrameNumber = (v: number) => studio.set("referenceFrameNumber", v);
-  const setSelectedProcessors = (v: string[]) => studio.set("selectedProcessors", v);
+  const setSelectedProcessors = (v: Updater<string[]>) =>
+    studio.set("selectedProcessors", applyUpdater(v, studio.state.selectedProcessors));
   const setAutoPreview = (v: boolean) => studio.set("autoPreview", v);
   const setPreviewOutputUrl = (v: string | null) => studio.set("previewOutputUrl", v);
   const setIsPreviewLoading = (v: boolean) => studio.set("isPreviewLoading", v);
@@ -868,16 +884,16 @@ export default function Home() {
                     <SourceUploader
                       sourceItems={sourceItems}
                       sourceImageFullPath={sourceImageFullPath}
-                      onSelectSource={(item) => setSourceImageFullPath(item.file_path)}
-                      onRemoveSource={(idx) => {
-                        const next = sourceItems.filter((_, i) => i !== idx);
+                      onSelectSource={(item: SourceItem) => setSourceImageFullPath(item.file_path)}
+                      onRemoveSource={(idx: number) => {
+                        const next = sourceItems.filter((_item: SourceItem, i: number) => i !== idx);
                         setSourceItems(next);
                         if (next.length > 0) setSourceImageFullPath(next[0].file_path);
                         else setSourceImageFullPath(null);
                       }}
                       onUpload={handleSourceUpload}
                       isDragging={isDraggingSource}
-                      onDragOver={(e) => { e.preventDefault(); setIsDraggingSource(true); }}
+                      onDragOver={(e: React.DragEvent) => { e.preventDefault(); setIsDraggingSource(true); }}
                       onDragLeave={() => setIsDraggingSource(false)}
                       onDrop={handleDropSource}
                     />
@@ -897,13 +913,13 @@ export default function Home() {
                       }}
                       detectedFaces={detectedTargetFaces}
                       faceMappings={faceMappings}
-                      onSelectFace={(face) => setSelectedFaceForModal(face)}
+                      onSelectFace={(face: DetectedFace) => setSelectedFaceForModal(face)}
                       isAnalyzing={isAnalyzingTargetFaces}
                       onAnalyzeFaces={handleAnalyzeFaces}
                       targetVideoTime={targetVideoTime}
                       setTargetVideoTime={setTargetVideoTime}
                       isDragging={isDraggingTarget}
-                      onDragOver={(e) => { e.preventDefault(); setIsDraggingTarget(true); }}
+                      onDragOver={(e: React.DragEvent) => { e.preventDefault(); setIsDraggingTarget(true); }}
                       onDragLeave={() => setIsDraggingTarget(false)}
                       onDrop={handleDropTarget}
                       getScaledBox={getScaledBox}
@@ -1054,13 +1070,13 @@ export default function Home() {
             <ProjectsGallery
               projects={projects}
               apiUrl={apiUrl}
-              onOpenFolder={async (name) => {
+              onOpenFolder={async (name: string) => {
                 const ok = await openProjectFolder(name);
                 if (ok) showToast("success", "Pasta Aberta", `Abrindo pasta do projeto "${name}" no explorador de arquivos.`);
                 else showToast("error", "Erro", "Não foi possível abrir a pasta.");
                 return ok;
               }}
-              onDeleteProject={async (name) => {
+              onDeleteProject={async (name: string) => {
                 const ok = await deleteProject(name);
                 if (ok) {
                   showToast("info", "Projeto Excluído", `Projeto "${name}" removido do disco.`);
@@ -1081,8 +1097,8 @@ export default function Home() {
             <JobsList
               jobs={jobs}
               onLoadToComparator={handleLoadToComparator}
-              onRequestDelete={(id) => setJobToDelete(id)}
-              onCancelJob={async (id) => {
+              onRequestDelete={(id: string) => setJobToDelete(id)}
+              onCancelJob={async (id: string) => {
                 const ok = await cancelJob(id);
                 if (ok) showToast("info", "Cancelamento", `Sinal de cancelamento enviado para ${id}.`);
                 else showToast("error", "Erro", "Não foi possível cancelar.");
@@ -1124,7 +1140,7 @@ export default function Home() {
         onClose={() => setSelectedFaceForModal(null)}
         sourceItems={sourceItems}
         faceMappings={faceMappings}
-        onSelectMapping={(faceIdx, sourcePath) => {
+        onSelectMapping={(faceIdx: number, sourcePath: string | null) => {
           setFaceMappings(prev => {
             const next = { ...prev };
             if (sourcePath) {
@@ -1182,7 +1198,7 @@ export default function Home() {
         report={diagnosticReport}
         isLoading={isDiagnosing}
         onApplyRecommendation={handleApplyDiagnosticRecommendation}
-        onJumpToSceneTimestamp={(sec) => {
+        onJumpToSceneTimestamp={(sec: number) => {
           setTargetVideoTime(sec);
           showToast("info", "Navegação por Take", `Posicionado em ${sec.toFixed(1)}s`);
         }}
