@@ -29,6 +29,5 @@ python-multipart>=0.0.9
 # --- UI (Gradio legacy CLI still ships with the engine) ---
 gradio==5.44.1
 gradio-rangeslider==0.0.8
-
 # --- Runtime helpers used by the fork (api/, worker.py) ---
 psutil>=5.9.0
