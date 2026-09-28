@@ -8,6 +8,11 @@ import { useJobs } from "../hooks/useJobs";
 import { useProjects } from "../hooks/useProjects";
 import { useHardware } from "../hooks/useHardware";
 import { usePresets } from "../hooks/usePresets";
+import { usePresetActions } from "../hooks/usePresetActions";
+import { useProjectActions } from "../hooks/useProjectActions";
+import { useComparatorActions } from "../hooks/useComparatorActions";
+import { useDiagnosticActions } from "../hooks/useDiagnosticActions";
+import { useJobActions } from "../hooks/useJobActions";
 import { useStudioState } from "../hooks/useStudioState";
 import { useConfig } from "../hooks/useConfig";
 import { useWizard } from "../hooks/useWizard";
@@ -67,62 +72,6 @@ export default function Home() {
   const { projects, fetchProjects, openProjectFolder, deleteProject, createProject } = useProjects(apiUrl);
   const { telemetry, hardwareInfo, availableProviders, fetchHardware } = useHardware(apiUrl);
 
-  const handleCreateNewProject = async (projectData: {
-    name: string;
-    description: string;
-    output_format: string;
-    output_video_encoder: string;
-    output_video_quality: string;
-    output_audio_encoder: string;
-    output_audio_quality: number;
-    output_audio_volume: number;
-    processors: string[];
-  }) => {
-    const newProj = await createProject(projectData);
-    if (newProj) {
-      setProjectName(newProj.name);
-      setOutputFormat(newProj.output_format ? newProj.output_format.toUpperCase() : "MP4");
-      if (newProj.output_video_encoder) setOutputVideoEncoder(newProj.output_video_encoder);
-      if (newProj.output_video_quality) setOutputQuality(newProj.output_video_quality);
-      if (newProj.output_audio_encoder) setOutputAudioEncoder(newProj.output_audio_encoder);
-      if (newProj.output_audio_quality) setOutputAudioQuality(newProj.output_audio_quality);
-      if (newProj.output_audio_volume !== undefined) setOutputAudioVolume(newProj.output_audio_volume);
-      if (newProj.processors && newProj.processors.length > 0) setSelectedProcessors(newProj.processors);
-
-      // Limpa mídias anteriores para novo início
-      setSourceItems([]);
-      setSourceImageFullPath(null);
-      setTargetMedia(null);
-      setTargetMediaFullPath(null);
-      setPreviewOutputUrl(null);
-
-      showToast("success", "Projeto Criado", `Projeto "${newProj.name}" criado com sucesso em ~/Vídeos. Abrindo Estúdio...`);
-      setActiveTab("create_new");
-    } else {
-      showToast("error", "Erro", "Não foi possível criar a pasta do projeto.");
-      throw new Error("Falha ao criar o projeto.");
-    }
-  };
-
-  const handleOpenProjectInStudio = (proj: Project) => {
-    if (proj.source_url) {
-      setSourceImageFullPath(proj.source_url);
-      setSourceItems([{
-        url: formatApiUrl(apiUrl, proj.source_url),
-        file_path: proj.source_url,
-        filename: proj.source_files[0] || "origem"
-      }]);
-    }
-    if (proj.target_url) {
-      const fullTarget = formatApiUrl(apiUrl, proj.target_url);
-      setTargetMedia(fullTarget);
-      setTargetMediaFullPath(proj.target_url);
-      setTargetMediaName(proj.target_files[0] || "destino");
-    }
-    setProjectName(proj.name);
-    setActiveTab("create_new");
-    showToast("info", "Projeto Carregado", `Mídias do projeto "${proj.name}" carregadas no Estúdio.`);
-  };
   const {
     presets,
     selectedPresetName,
@@ -160,6 +109,7 @@ export default function Home() {
     selectedProcessors, autoPreview, processorOptions,
     output, mask,
     isPreviewLoading, isGenerating, isDraggingSource, isDraggingTarget, jobToDelete,
+    previewOutputUrl,
   } = studio.state;
 
   // Aliases de leitura para manter compatibilidade com referências existentes
@@ -289,6 +239,31 @@ export default function Home() {
     "age_modifier", "expression_restorer", "deep_swapper", "lip_syncer",
     "face_debugger", "frame_colorizer", "background_remover",
   ];
+
+  // Project actions: extracted to useProjectActions (handleCreateNewProject,
+  // handleOpenProjectInStudio). Requer setters acima já inicializados.
+  const { handleCreateNewProject, handleOpenProjectInStudio } = useProjectActions({
+    apiUrl,
+    createProject,
+    showToast,
+    setters: {
+      setProjectName,
+      setOutputFormat,
+      setOutputVideoEncoder,
+      setOutputQuality,
+      setOutputAudioEncoder,
+      setOutputAudioQuality,
+      setOutputAudioVolume,
+      setSelectedProcessors,
+      setSourceItems,
+      setSourceImageFullPath,
+      setTargetMedia,
+      setTargetMediaFullPath,
+      setTargetMediaName,
+      setPreviewOutputUrl,
+      setActiveTab,
+    },
+  });
 
   // Configurações do sistema: hook agregador com fetch inicial + save action.
   const configHook = useConfig(apiUrl);
@@ -740,55 +715,25 @@ export default function Home() {
     }
   };
 
-  // Salvar Configurações
+  // Diagnostic actions: extracted to useDiagnosticActions
+  // (handleExportDiagnostic, handleDownloadOutput).
+  const { handleExportDiagnostic, handleDownloadOutput } = useDiagnosticActions({
+    apiUrl,
+    showToast,
+  });
+
+  // Wrapper de save para a página de Configurações: usa o save() que já
+  // existe em useConfig (POST /api/config) + emite toast de feedback.
+  // Esse handler é o único que ainda vive aqui porque precisa do evento
+  // do form (e.preventDefault), mas a lógica HTTP está totalmente no hook.
   const handleSaveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSavingConfig(true);
-    try {
-      const url = formatApiUrl(apiUrl, "/api/config");
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          temp_path: configTempPath,
-          jobs_path: configJobsPath,
-          video_memory_strategy: configMemoryStrategy,
-          execution_thread_count: configThreadCount,
-          log_level: configLogLevel,
-          execution_providers: configProviders,
-        }),
-      });
-      if (!res.ok) throw new Error("Erro ao salvar.");
+    const ok = await configHook.save();
+    if (ok) {
       showToast("success", "Configurações Salvas", "Novos parâmetros registrados.");
-    } catch {
+    } else {
       showToast("error", "Erro", "Não foi possível persistir as configurações.");
-    } finally {
-      setIsSavingConfig(false);
     }
-  };
-
-  // Exportar Diagnóstico
-  const handleExportDiagnostic = () => {
-    const url = formatApiUrl(apiUrl, "/api/diagnostic/export");
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "facefusion_diagnostic.zip";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    showToast("info", "Diagnóstico", "Download do pacote de logs iniciado.");
-  };
-
-  // Download do Resultado
-  const handleDownloadOutput = () => {
-    if (!previewOutputUrl) return;
-    const a = document.createElement("a");
-    a.href = previewOutputUrl;
-    a.download = "facefusion_output";
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    showToast("info", "Download", "Arquivo sendo transferido.");
   };
 
   // Toggle Processor Selection
@@ -798,67 +743,53 @@ export default function Home() {
     );
   };
 
-  // Presets Handlers
-  const handleApplyPreset = (name: string) => {
-    const preset = presets.find(p => p.name === name);
-    if (!preset) return;
-    setSelectedPresetName(name);
-    setFaceSwapperWeight(preset.faceSwapperWeight);
-    setFaceMaskBlur(preset.faceMaskBlur);
-    setDetectionThreshold(preset.detectionThreshold);
-    setSmoothing(preset.smoothing);
-    setFaceSwapperModel(preset.faceSwapperModel);
-    setFaceSwapperPixelBoost(preset.faceSwapperPixelBoost);
-    if (preset.faceEnhancerModel) setFaceEnhancerModel(preset.faceEnhancerModel);
-    if (preset.faceEnhancerBlend !== undefined) setFaceEnhancerBlend(preset.faceEnhancerBlend);
-    if (preset.frameEnhancerModel) setFrameEnhancerModel(preset.frameEnhancerModel);
-    if (preset.frameEnhancerBlend !== undefined) setFrameEnhancerBlend(preset.frameEnhancerBlend);
-    showToast("success", "Preset Aplicado", preset.name);
-  };
+  // Presets Handlers (extracted to usePresetActions)
+  const { handleApplyPreset, handleSaveCurrentPreset } = usePresetActions({
+    presets,
+    saveCustomPreset,
+    newPresetName,
+    showToast,
+    setters: {
+      setSelectedPresetName,
+      setFaceSwapperWeight,
+      setFaceMaskBlur,
+      setDetectionThreshold,
+      setSmoothing,
+      setFaceSwapperModel,
+      setFaceSwapperPixelBoost,
+      setFaceEnhancerModel,
+      setFaceEnhancerBlend,
+      setFrameEnhancerModel,
+      setFrameEnhancerBlend,
+    },
+    current: {
+      faceSwapperWeight,
+      faceMaskBlur,
+      detectionThreshold,
+      smoothing,
+      faceSwapperModel,
+      faceSwapperPixelBoost,
+      faceEnhancerModel,
+      faceEnhancerBlend,
+      faceEnhancerWeight,
+      frameEnhancerModel,
+      frameEnhancerBlend,
+    },
+  });
 
-  const handleSaveCurrentPreset = () => {
-    const success = saveCustomPreset(
-      {
-        faceSwapperWeight,
-        faceMaskBlur,
-        detectionThreshold,
-        smoothing,
-        faceSwapperModel,
-        faceSwapperPixelBoost,
-        faceEnhancerModel,
-        faceEnhancerBlend,
-        faceEnhancerWeight,
-        frameEnhancerModel,
-        frameEnhancerBlend,
-      },
-      newPresetName
-    );
-    if (success) {
-      showToast("success", "Preset Salvo", newPresetName);
-    } else {
-      showToast("warning", "Nome Inválido", "Informe um nome válido para o preset.");
-    }
-  };
+  // Carregar job para o comparador (extracted to useComparatorActions)
+  const { handleLoadToComparator } = useComparatorActions({
+    apiUrl,
+    showToast,
+    setPreviewOutputUrl,
+    setActiveTab,
+  });
 
-  // Carregar job para o comparador
-  const handleLoadToComparator = (job: Job) => {
-    if (job.outputUrl) {
-      setPreviewOutputUrl(formatApiUrl(apiUrl, job.outputUrl));
-      setActiveTab("create_new");
-      showToast("info", "Job Carregado", `Visualizando resultado de ${job.id}`);
-    }
-  };
-
-  // Confirmar exclusão de job
+  // Confirmar exclusão de job (extracted to useJobActions.confirmDeleteJob).
+  // Usa o deleteJob exposto pelo useJobActions (que envolve fetch + toast).
+  const { confirmDeleteJob } = useJobActions({ apiUrl, showToast });
   const handleDeleteJobConfirmed = async () => {
-    if (!jobToDelete) return;
-    const res = await deleteJob(jobToDelete);
-    if (res.success) {
-      showToast("success", "Job Excluído", `Tarefa ${jobToDelete} removida.`);
-    } else {
-      showToast("error", "Erro ao Excluir", res.message);
-    }
-    setJobToDelete(null);
+    await confirmDeleteJob(jobToDelete, () => setJobToDelete(null));
   };
 
   const queuedCount = jobs.filter(j => j.status === "processing" || j.status === "queued").length;

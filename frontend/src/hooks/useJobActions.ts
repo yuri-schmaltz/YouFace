@@ -18,6 +18,7 @@ export interface UseJobActionsOptions {
 export interface UseJobActionsReturn {
   cancelJob: (jobId: string) => Promise<boolean>;
   deleteJob: (jobId: string) => Promise<{ success: boolean; message?: string }>;
+  confirmDeleteJob: (jobId: string | null, onAfter?: () => void) => Promise<void>;
 }
 
 export function useJobActions(options: UseJobActionsOptions): UseJobActionsReturn {
@@ -59,5 +60,19 @@ export function useJobActions(options: UseJobActionsOptions): UseJobActionsRetur
     }
   }, [apiUrl, showToast, onSuccess]);
 
-  return { cancelJob, deleteJob };
+  const confirmDeleteJob = useCallback(
+    async (jobId: string | null, onAfter?: () => void) => {
+      if (!jobId) return;
+      const res = await deleteJob(jobId);
+      if (res.success) {
+        showToast("success", "Job Excluído", `Tarefa ${jobId} removida.`);
+      } else {
+        showToast("error", "Erro ao Excluir", res.message);
+      }
+      onAfter?.();
+    },
+    [deleteJob, showToast],
+  );
+
+  return { cancelJob, deleteJob, confirmDeleteJob };
 }
