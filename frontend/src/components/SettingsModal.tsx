@@ -186,7 +186,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <select
                     value={downloadScope}
                     disabled={isDownloading}
-                    onChange={(e) => setDownloadScope(e.target.value as any)}
+                    onChange={(e) => setDownloadScope(e.target.value as "full" | "lite")}
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-zinc-200 outline-none focus:border-red-500 transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     <option value="full">Todos (Full - 245 mod)</option>
@@ -199,7 +199,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <select
                     value={downloadProvider}
                     disabled={isDownloading}
-                    onChange={(e) => setDownloadProvider(e.target.value as any)}
+                    onChange={(e) => setDownloadProvider(e.target.value as "github" | "huggingface")}
                     className="w-full bg-zinc-900 border border-zinc-800 rounded-lg px-2.5 py-1.5 text-[11px] font-bold text-zinc-200 outline-none focus:border-red-500 transition-colors disabled:opacity-50 cursor-pointer"
                   >
                     <option value="github">GitHub Releases Oficial</option>

@@ -79,8 +79,9 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
         processors: selectedProcessors.length > 0 ? selectedProcessors : ["face_swapper"],
       });
       onClose();
-    } catch (err: any) {
-      setErrorMessage(err.message || "Erro ao criar projeto.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      setErrorMessage(message || "Erro ao criar projeto.");
     } finally {
       setIsSubmitting(false);
     }

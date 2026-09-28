@@ -527,8 +527,9 @@ export default function Home() {
       const data: VideoDiagnosticReport = await res.json();
       setDiagnosticReport(data);
       showToast("success", "Diagnóstico Concluído", `${data.total_scenes} takes mapeados com recomendações personalizadas.`);
-    } catch (err: any) {
-      showToast("error", "Erro no Diagnóstico", err.message || "Não foi possível analisar o vídeo.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast("error", "Erro no Diagnóstico", message || "Não foi possível analisar o vídeo.");
     } finally {
       setIsDiagnosing(false);
     }
@@ -618,8 +619,9 @@ export default function Home() {
         setPreviewOutputUrl(formatApiUrl(apiUrl, data.preview_url));
         if (!silent) showToast("success", "Preview Atualizado", "Novo frame processado.");
       }
-    } catch (err: any) {
-      if (!silent) showToast("error", "Erro no Preview", err.message || "Falha na pré-visualização.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      if (!silent) showToast("error", "Erro no Preview", message || "Falha na pré-visualização.");
     } finally {
       setIsPreviewLoading(false);
     }
@@ -730,8 +732,9 @@ export default function Home() {
       fetchProjects();
       setProjectName("");
       setActiveTab("jobs");
-    } catch (err: any) {
-      showToast("error", "Erro ao Criar Tarefa", err.message || "Falha na conexão.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      showToast("error", "Erro ao Criar Tarefa", message || "Falha na conexão.");
     } finally {
       setIsGenerating(false);
     }

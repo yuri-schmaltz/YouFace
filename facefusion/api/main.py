@@ -73,6 +73,16 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Middleware custom: rate limiting, security headers, body size cap
+    from facefusion.api.middleware import RateLimiter, SecurityHeaders, MaxBodySize
+    # Ordem importa: MaxBodySize primeiro (rejeita cedo), depois SecurityHeaders,
+    # depois RateLimiter. Middlewares são executados em ordem reversa ao redor
+    # da request, então esta ordem resulta em: rate limit check first, then
+    # security headers added on response, then size cap on the way in.
+    app.add_middleware(MaxBodySize, max_bytes=200 * 1024 * 1024)
+    app.add_middleware(SecurityHeaders)
+    app.add_middleware(RateLimiter, requests_per_window=60, window_seconds=60)
+
     # Inclusão do roteador de endpoints
     app.include_router(api_router, prefix="/api")
 
