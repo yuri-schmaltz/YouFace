@@ -120,6 +120,13 @@ merge aplicado. Ver [`notes/upstream_divergence_2026-09-28.md`](notes/upstream_d
   Próximo passo: migrar `page.tsx` para consumir esse hook.
 - **P0-1 — Piso de Python subido para 3.12** em `pyproject.toml` e `Dockerfile`.
   CI já rodava em 3.12 — alinhamento sem regressão.
+- **P0-1 — `requirements.txt` ⇄ `pyproject.toml` sincronizados.** Removido
+  pino morto de `onnxruntime` (o `installer.py` injeta o flavor correto via
+  CLI arg: `default`/`cuda@12`/`cuda@13`/`openvino`/`rocm`/`directml`).
+  Adicionado `psutil` ao Poetry (já era dependência runtime usada em
+  `routes.py:167-201`) e `httpx` ao dev group (TestClient nos testes de API).
+  `requirements.txt` agora é gerado a partir do Poetry e documenta a
+  semântica do installer.
 
 ### 🐛 Fixed
 
