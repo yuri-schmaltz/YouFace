@@ -13,13 +13,107 @@ fork-specific portion of the version (`-my.X`).
 
 ---
 
+## [3.9.0-my.1] — 2026-09-28
+
+**Fork base:** upstream `3.9.0` (commit `6b318a9`).
+**Merged upstream:** `3.7.0`..`3.9.0` (13 commits, ~80 files).
+**Status:** Sincronizado com upstream 3.9.x. Inclui 78 commits próprios do fork
+sobre a base 3.6.1 + 13 commits upstream. **Ahead** of upstream 3.6.1 by ~90
+commits. Upstream master pós-3.9.0 sem novos tags.
+
+### 🛠 Changed
+
+- **P3-1 — Merge upstream 3.9.0.** Commit único (`6b318a9 load voice extractor
+  on every processor`). 8 arquivos, +118/-15 LoC. Adiciona suporte a voice
+  extractor no face swapper e expande `face_landmarker.py` (+84 LoC).
+- **P1-1 — Decomposição do `page.tsx` concluída.** 78 `useState` reduzidos a
+  14, todos migrados para o hook agregador `useStudioState`. Os 64 `useState`
+  do Studio (mídia, processors, máscara, output) são agora um único objeto
+  tipado e serializável. As 50+ referências a setters foram preservadas via
+  wrappers thin (zero overhead) para não tocar em 100+ call-sites no JSX.
+  Arquivo ainda tem 1.271 linhas mas está semanticamente decomposto: ler
+  `studio.state` é mais barato que ler 50 variáveis soltas.
+
+### 🐛 Fixed
+
+- (nenhum — merge limpo, 1 conflito manual em `metadata.py` resolvido em favor
+  do fork, versão bumped para `3.9.0-my.1`)
+
+### ⬆️ Upstream divergence
+
+| Upstream tag | Status |
+|---|---|
+| `3.6.0` | ✅ merged (`57fcb86`) |
+| `3.6.1` | ✅ merged (`5b7d145`) — fork base |
+| `3.7.0` | ✅ merged em `3.8.3-my.1` (`7bb86d9`) |
+| `3.7.1` | ✅ merged em `3.8.3-my.1` (`7bb86d9`) |
+| `3.8.0` | ✅ merged em `3.8.3-my.1` — memory leak hotfix |
+| `3.8.1` | ✅ merged em `3.8.3-my.1` |
+| `3.8.2` | ✅ merged em `3.8.3-my.1` |
+| `3.8.3` | ✅ merged em `3.8.3-my.1` |
+| `3.9.0` | ✅ merged em `3.9.0-my.1` (`1e61875`) — fork base |
+| `3.9.0+` | upstream master sem novos tags; nada pendente |
+
+---
+
+## [3.8.3-my.1] — 2026-09-28
+
+**Fork base:** upstream `3.6.1` (commit `5b7d145`).
+**Merged upstream:** `3.7.0`..`3.8.3` (12 commits, 79 files).
+**Status:** Primeiro release do fork sincronizado com upstream 3.8.x.
+**Behind** upstream `3.9.0` (1 commit, absorvido em `3.9.0-my.1`).
+
+### 🛠 Changed
+
+- **P3-1 — Merge upstream 3.7.0..3.8.3.** 12 commits absorvidos: hotfix de
+  memory leak (3.8.0), refactor de `streamer.py` e `temp_helper.py`,
+  expansão de `video_manager.py` (+151 LoC) e `types.py` (+112 LoC), e
+  alinhamento quase-completo do módulo `workflows/*` (que o fork já tinha
+  criado a partir do design upstream 3.7.0+).
+- **P3-1 — Resolução de 2 conflitos.** `metadata.py` (fork vence, version
+  bumped para `3.8.3-my.1`); `requirements.txt` (fork vence — pinos do Poetry
+  são a fonte da verdade). Resto do merge automático.
+- **P2-3 — Suporte a LAN / paths relativos.** O backend grava agora
+  `apiUrl: ""` (caminho relativo) em `frontend/public/config.json`,
+  adicionando `apiUrlAbsolute` para compatibilidade. O frontend (`utils/api.ts`)
+  prefere caminho relativo quando disponível, destravando deploy via reverse
+  proxy e acesso via IP de LAN sem trocar `config.json` manualmente.
+- **P1-4 — Cleanup age-based.** `POST /media/cleanup` aceita agora
+  `max_age_seconds` (default 3600s). Arquivos mais novos que o limite são
+  preservados para evitar race com jobs em curso.
+- **P1-1 — Decomposição do `page.tsx` (passo 1).** Adicionado o hook agregador
+  `frontend/src/hooks/useStudioState.ts` (221 linhas tipadas, 5 interfaces
+  públicas: `StudioState`, `ProcessorOptions`, `OutputOptions`, `MaskOptions`,
+  e a função `useStudioState()`). JSDoc inclui migration guide.
+- **P0-1 — Piso de Python subido para 3.12** em `pyproject.toml` e `Dockerfile`.
+  CI já rodava em 3.12 — alinhamento sem regressão.
+- **P0-1 — `requirements.txt` ⇄ `pyproject.toml` sincronizados.** Removido
+  pino morto de `onnxruntime` (o `installer.py` injeta o flavor correto via
+  CLI arg: `default`/`cuda@12`/`cuda@13`/`openvino`/`rocm`/`directml`).
+  Adicionado `psutil` ao Poetry (já era dependência runtime usada em
+  `routes.py:167-201`) e `httpx` ao dev group (TestClient nos testes de API).
+  `requirements.txt` agora é mirror documentado do Poetry.
+
+### 🐛 Fixed
+
+- **P3-2 — CI endurecido.** Adicionado `npx tsc --noEmit` (type-check TS),
+  `npm run build` (next export) e `npm run lint` (eslint estrito, sem `|| true`)
+  no job `frontend-check`. Jobs `test` e `report` agora instalam as deps
+  fork (`fastapi`, `uvicorn[standard]`, `sqlalchemy`, `python-multipart`,
+  `psutil`, `httpx`) que o `install.py` oficial pode não trazer.
+- **P3-2 — Job `api-tests` dedicado.** Novo job CI roda `pytest
+  tests/test_api_endpoints.py tests/test_api_face_mapping.py
+  tests/test_api_worker.py` em Python 3.12 limpo, com upload de artefatos
+  em caso de falha. Precisa do `test` e `frontend-check` verde para rodar.
+
+---
+
 ## [3.7.0-my.1] — 2026-07-15
 
 **Fork base:** upstream `3.6.1` (commit `5b7d145`).
 **Status:** First tagged release of this fork. Brings the codebase in line with
 upstream `3.6.1` plus 16 fork-specific commits. **Behind** upstream `3.7.0` / `3.7.1`
-(those upstream releases have **not** been merged into this fork yet — see
-"Upstream divergence" below).
+(merged into `3.8.3-my.1` / `3.9.0-my.1` — see above).
 
 ### ✨ Highlights
 
@@ -84,148 +178,6 @@ upstream `3.6.1` plus 16 fork-specific commits. **Behind** upstream `3.7.0` / `3
 - `facefusion/__init__.py` previously empty; now declares
   `version = "3.7.0-my.1"` and metadata so the Python package is
   introspectable.
-
-### ⬆️ Upstream divergence
-
-| Upstream tag | Merged into this fork? |
-|---|---|
-| `3.6.0` | ✅ (commit `57fcb86`) |
-| `3.6.1` | ✅ (commit `5b7d145`) — **fork base** |
-| `3.7.0` | ❌ pending |
-| `3.7.1` | ❌ pending |
-
-A merge of upstream `3.7.0` + `3.7.1` is the next planned item. See
-[README.md § Upstream divergence](README.md#upstream-divergence) for the
-strategy and reproduction commands.
-
----
-
-## [3.8.3-my.1] — 2026-09-28
-
-**Fork base:** upstream `3.6.1` (commit `5b7d145`).
-**Merged upstream:** `3.7.0`..`3.8.3` (12 commits, 79 files).
-**Status:** Primeiro release sincronizado com upstream 3.8.x. Inclui 78
-commits próprios do fork sobre a base 3.6.1 + 12 commits upstream. **Behind**
-upstream `3.9.0` (1 commit, baixo risco).
-
-### 🛠 Changed
-
-- **P3-1 — Merge upstream 3.7.0..3.8.3.** 12 commits absorvidos, incluindo
-  hotfix de memory leak (3.8.0), refactor de `streamer.py` e `temp_helper.py`,
-  expansão de `video_manager.py` (151 LoC) e `types.py` (112 LoC), e
-  alinhamento quase-completo do módulo `workflows/*` (que o fork já tinha
-  criado a partir do design upstream 3.7.0+).
-- **P3-1 — Resolução de 2 conflitos.** `metadata.py` (fork vence, version
-  bumped para `3.8.3-my.1`); `requirements.txt` (fork vence — pinos do Poetry
-  são a fonte da verdade). Resto do merge automático.
-- **P2-3 — Suporte a LAN / paths relativos.** O backend grava agora
-  `apiUrl: ""` (caminho relativo) em `frontend/public/config.json`,
-  adicionando `apiUrlAbsolute` para compatibilidade. O frontend (`utils/api.ts`)
-  prefere caminho relativo quando disponível, destravando deploy via reverse
-  proxy e acesso via IP de LAN sem trocar `config.json` manualmente.
-- **P1-4 — Cleanup age-based.** `POST /media/cleanup` aceita agora
-  `max_age_seconds` (default 3600s). Arquivos mais novos que o limite são
-  preservados para evitar race com jobs em curso.
-- **P1-1 — Decomposição do `page.tsx` (passo 1).** Adicionado o hook agregador
-  `frontend/src/hooks/useStudioState.ts` (221 linhas tipadas, 5 interfaces
-  públicas, migration guide embutida em JSDoc). Isola os 78 `useState` do
-  Studio em uma única estrutura serializável. **Próximo passo:** migrar
-  `page.tsx` para consumir o hook (PR dedicada, requer `npm install` para
-  validar `tsc`).
-- **P0-1 — Piso de Python subido para 3.12** em `pyproject.toml` e `Dockerfile`.
-  CI já rodava em 3.12 — alinhamento sem regressão.
-- **P0-1 — `requirements.txt` ⇄ `pyproject.toml` sincronizados.** Removido
-  pino morto de `onnxruntime` (o `installer.py` injeta o flavor correto via
-  CLI arg: `default`/`cuda@12`/`cuda@13`/`openvino`/`rocm`/`directml`).
-  Adicionado `psutil` ao Poetry (já era dependência runtime usada em
-  `routes.py:167-201`) e `httpx` ao dev group (TestClient nos testes de API).
-  `requirements.txt` agora é gerado a partir do Poetry e documenta a
-  semântica do installer.
-
-### 🐛 Fixed
-
-- **P3-2 — CI endurecido.** Adicionado `npx tsc --noEmit` (type-check TS),
-  `npm run build` (next export) e `npm run lint` (eslint estrito, sem `|| true`)
-  no job `frontend-check`. Jobs `test` e `report` agora instalam as deps
-  fork (`fastapi`, `uvicorn[standard]`, `sqlalchemy`, `python-multipart`,
-  `psutil`, `httpx`) que o `install.py` oficial pode não trazer.
-- **P3-2 — Job `api-tests` dedicado.** Novo job CI roda `pytest
-  tests/test_api_endpoints.py tests/test_api_face_mapping.py
-  tests/test_api_worker.py` em Python 3.12 limpo, com upload de artefatos
-  em caso de falha. Precisa do `test` e `frontend-check` verde para rodar.
-
-### ⬆️ Upstream divergence — atualizado
-
-| Upstream tag | Status |
-|---|---|
-| `3.6.0` | ✅ merged (`57fcb86`) |
-| `3.6.1` | ✅ merged (`5b7d145`) — fork base |
-| `3.7.0` | ✅ merged em `3.8.3-my.1` (`7bb86d9`) |
-| `3.7.1` | ✅ merged em `3.8.3-my.1` (`7bb86d9`) |
-| `3.8.0` | ✅ merged em `3.8.3-my.1` — memory leak hotfix |
-| `3.8.1` | ✅ merged em `3.8.3-my.1` |
-| `3.8.2` | ✅ merged em `3.8.3-my.1` |
-| `3.8.3` | ✅ merged em `3.8.3-my.1` — fork base |
-| `3.9.0` | ❌ pendente (1 commit, baixo risco) |
-
-Notas do merge (`7bb86d9`):
-- 2 conflitos manuais resolvidos; resto automático
-- `facefusion/workflows/core.py` tomou versão upstream (canônica; fork já
-  estava 90% alinhado)
-- `facefusion/vision.py`, `facefusion/video_manager.py`, `facefusion/types.py`:
-  novas funções upstream integradas sem modificação (aditivas)
-- `facefusion/uis/*` refatorados upstream; fork não usa Gradio, então
-  refactor passou direto
-
-### 🛠 Changed
-
-- **P2-3 — Suporte a LAN / paths relativos.** O backend grava agora
-  `apiUrl: ""` (caminho relativo) em `frontend/public/config.json`,
-  adicionando `apiUrlAbsolute` para compatibilidade. O frontend (`utils/api.ts`)
-  prefere caminho relativo quando disponível, destravando deploy via reverse
-  proxy e acesso via IP de LAN sem trocar `config.json` manualmente.
-- **P1-4 — Cleanup age-based.** `POST /media/cleanup` aceita agora
-  `max_age_seconds` (default 3600s). Arquivos mais novos que o limite são
-  preservados para evitar race com jobs em curso.
-- **P1-1 — Decomposição do `page.tsx`.** Adicionado o hook agregador
-  `frontend/src/hooks/useStudioState.ts` que isola 50+ `useState` do Studio.
-  Próximo passo: migrar `page.tsx` para consumir esse hook.
-- **P0-1 — Piso de Python subido para 3.12** em `pyproject.toml` e `Dockerfile`.
-  CI já rodava em 3.12 — alinhamento sem regressão.
-- **P0-1 — `requirements.txt` ⇄ `pyproject.toml` sincronizados.** Removido
-  pino morto de `onnxruntime` (o `installer.py` injeta o flavor correto via
-  CLI arg: `default`/`cuda@12`/`cuda@13`/`openvino`/`rocm`/`directml`).
-  Adicionado `psutil` ao Poetry (já era dependência runtime usada em
-  `routes.py:167-201`) e `httpx` ao dev group (TestClient nos testes de API).
-  `requirements.txt` agora é gerado a partir do Poetry e documenta a
-  semântica do installer.
-
-### 🐛 Fixed
-
-- **P3-2 — CI endurecido.** Adicionado `npx tsc --noEmit` (type-check TS),
-  `npm run build` (next export) e `npm run lint` (eslint estrito, sem `|| true`)
-  no job `frontend-check`. Jobs `test` e `report` agora instalam as deps
-  fork (`fastapi`, `uvicorn[standard]`, `sqlalchemy`, `python-multipart`,
-  `psutil`, `httpx`) que o `install.py` oficial pode não trazer.
-
-### ⬆️ Upstream divergence — atualizado
-
-| Upstream tag | Status |
-|---|---|
-| `3.6.0` | ✅ merged (`57fcb86`) |
-| `3.6.1` | ✅ merged (`5b7d145`) — fork base |
-| `3.7.0` | ❌ pendente |
-| `3.7.1` | ❌ pendente |
-| `3.8.0` | ❌ pendente (hotfix memory leak) |
-| `3.8.1` | ❌ pendente |
-| `3.8.2` | ❌ pendente |
-| `3.8.3` | ❌ pendente |
-| `3.9.0` | ❌ pendente (load voice extractor on every processor) |
-
-Branch `merge/upstream-3.8.3` está pronta localmente com os remotes
-configurados (`origin` + `upstream`), aguardando merge manual. Apenas 8 commits
-upstream entre `3.7.1` e `master`, mudança majoritariamente em
-`processors/modules/*` — baixo risco de conflito.
 
 ---
 
