@@ -8,6 +8,7 @@ import { useJobs } from "../hooks/useJobs";
 import { useProjects } from "../hooks/useProjects";
 import { useHardware } from "../hooks/useHardware";
 import { usePresets } from "../hooks/usePresets";
+import { useStudioState } from "../hooks/useStudioState";
 import { ToastContainer } from "../components/ToastContainer";
 import { Header } from "../components/Header";
 import { SourceUploader } from "../components/SourceUploader";
@@ -145,112 +146,153 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [apiUrl]);
 
-  // Mídia e Uploads
-  const [sourceItems, setSourceItems] = useState<SourceItem[]>([]);
-  const [sourceImageFullPath, setSourceImageFullPath] = useState<string | null>(null);
+  // Studio state agregado (substitui 50+ useState do monólito — ver
+  // useStudioState.ts para a migration guide completa).
+  const studio = useStudioState();
+  const {
+    sourceItems, sourceImageFullPath,
+    targetMedia, targetMediaFullPath, targetMediaName, targetVideoTime,
+    detectedTargetFaces, isAnalyzingTargetFaces, selectedFaceForModal,
+    faceMappings, referenceFrameNumber,
+    selectedProcessors, autoPreview, processorOptions,
+    output, mask,
+    isPreviewLoading, isGenerating, isDraggingSource, isDraggingTarget, jobToDelete,
+  } = studio.state;
 
-  const [targetMedia, setTargetMedia] = useState<string | null>(null);
-  const [targetMediaFullPath, setTargetMediaFullPath] = useState<string | null>(null);
-  const [targetMediaName, setTargetMediaName] = useState<string>("");
-  const [targetVideoTime, setTargetVideoTime] = useState<number>(0);
+  // Aliases de leitura para manter compatibilidade com referências existentes
+  // no JSX (que leem `deepSwapperModel` em vez de `processorOptions.deep_swapper_model`).
+  const {
+    deep_swapper_model: deepSwapperModel,
+    deep_swapper_morph: deepSwapperMorph,
+    lip_syncer_model: lipSyncerModel,
+    lip_syncer_weight: lipSyncerWeight,
+    face_debugger_items: faceDebuggerItems,
+    frame_colorizer_model: frameColorizerModel,
+    frame_colorizer_blend: frameColorizerBlend,
+    frame_colorizer_size: frameColorizerSize,
+    background_remover_model: backgroundRemoverModel,
+    background_remover_color: backgroundRemoverColor,
+    face_swapper_weight: faceSwapperWeight,
+    face_swapper_model: faceSwapperModel,
+    face_swapper_pixel_boost: faceSwapperPixelBoost,
+    face_mask_blur: faceMaskBlur,
+    detection_threshold: detectionThreshold,
+    smoothing,
+    face_enhancer_model: faceEnhancerModel,
+    face_enhancer_blend: faceEnhancerBlend,
+    face_enhancer_weight: faceEnhancerWeight,
+    frame_enhancer_model: frameEnhancerModel,
+    frame_enhancer_blend: frameEnhancerBlend,
+    face_editor_model: faceEditorModel,
+    face_editor_smile: faceEditorSmile,
+    age_modifier_model: ageModifierModel,
+    age_modifier_direction: ageModifierDirection,
+    expression_restorer_factor: expressionRestorerFactor,
+  } = processorOptions;
+  const {
+    types: faceMaskTypes,
+    padding: faceMaskPadding,
+    detectorModel: faceDetectorModel,
+    detectorSize: faceDetectorSize,
+    detectorAngles: faceDetectorAngles,
+    landmarkerModel: faceLandmarkerModel,
+    landmarkerScore: faceLandmarkerScore,
+  } = mask;
+  const {
+    format: outputFormat,
+    quality: outputQuality,
+    videoEncoder: outputVideoEncoder,
+    audioEncoder: outputAudioEncoder,
+    audioQuality: outputAudioQuality,
+    audioVolume: outputAudioVolume,
+  } = output;
 
+  // Wrapper setters para manter compatibilidade com o resto do componente.
+  // Cada setter é apenas um alias para `studio.set` — zero overhead.
+  const setSourceItems = (v: SourceItem[]) => studio.set("sourceItems", v);
+  const setSourceImageFullPath = (v: string | null) => studio.set("sourceImageFullPath", v);
+  const setTargetMedia = (v: string | null) => studio.set("targetMedia", v);
+  const setTargetMediaFullPath = (v: string | null) => studio.set("targetMediaFullPath", v);
+  const setTargetMediaName = (v: string) => studio.set("targetMediaName", v);
+  const setTargetVideoTime = (v: number) => studio.set("targetVideoTime", v);
+  const setDetectedTargetFaces = (v: DetectedFace[]) => studio.set("detectedTargetFaces", v);
+  const setIsAnalyzingTargetFaces = (v: boolean) => studio.set("isAnalyzingTargetFaces", v);
+  const setSelectedFaceForModal = (v: DetectedFace | null) => studio.set("selectedFaceForModal", v);
+  const setFaceMappings = (v: Record<number, string>) => studio.set("faceMappings", v);
+  const setReferenceFrameNumber = (v: number) => studio.set("referenceFrameNumber", v);
+  const setSelectedProcessors = (v: string[]) => studio.set("selectedProcessors", v);
+  const setAutoPreview = (v: boolean) => studio.set("autoPreview", v);
+  const setPreviewOutputUrl = (v: string | null) => studio.set("previewOutputUrl", v);
+  const setIsPreviewLoading = (v: boolean) => studio.set("isPreviewLoading", v);
+  const setIsGenerating = (v: boolean) => studio.set("isGenerating", v);
+  const setIsDraggingSource = (v: boolean) => studio.set("isDraggingSource", v);
+  const setIsDraggingTarget = (v: boolean) => studio.set("isDraggingTarget", v);
+  const setJobToDelete = (v: string | null) => studio.set("jobToDelete", v);
+
+  // Processors adicionais: helpers que fazem patch no sub-objeto
+  // `processorOptions` para manter defaults imutáveis.
+  const setDeepSwapperModel = (v: string) => studio.patch("processorOptions", { deep_swapper_model: v });
+  const setDeepSwapperMorph = (v: number) => studio.patch("processorOptions", { deep_swapper_morph: v });
+  const setLipSyncerModel = (v: string) => studio.patch("processorOptions", { lip_syncer_model: v });
+  const setLipSyncerWeight = (v: number) => studio.patch("processorOptions", { lip_syncer_weight: v });
+  const setFaceDebuggerItems = (v: string[]) => studio.patch("processorOptions", { face_debugger_items: v });
+  const setFrameColorizerModel = (v: string) => studio.patch("processorOptions", { frame_colorizer_model: v });
+  const setFrameColorizerBlend = (v: number) => studio.patch("processorOptions", { frame_colorizer_blend: v });
+  const setFrameColorizerSize = (v: string) => studio.patch("processorOptions", { frame_colorizer_size: v });
+  const setBackgroundRemoverModel = (v: string) => studio.patch("processorOptions", { background_remover_model: v });
+  const setBackgroundRemoverColor = (v: string) => studio.patch("processorOptions", { background_remover_color: v });
+  const setFaceSwapperWeight = (v: number) => studio.patch("processorOptions", { face_swapper_weight: v });
+  const setFaceSwapperModel = (v: string) => studio.patch("processorOptions", { face_swapper_model: v });
+  const setFaceSwapperPixelBoost = (v: string) => studio.patch("processorOptions", { face_swapper_pixel_boost: v });
+  const setFaceMaskBlur = (v: number) => studio.patch("processorOptions", { face_mask_blur: v });
+  const setDetectionThreshold = (v: number) => studio.patch("processorOptions", { detection_threshold: v });
+  const setSmoothing = (v: number) => studio.patch("processorOptions", { smoothing: v });
+  const setFaceEnhancerModel = (v: string) => studio.patch("processorOptions", { face_enhancer_model: v });
+  const setFaceEnhancerBlend = (v: number) => studio.patch("processorOptions", { face_enhancer_blend: v });
+  const setFaceEnhancerWeight = (v: number) => studio.patch("processorOptions", { face_enhancer_weight: v });
+  const setFrameEnhancerModel = (v: string) => studio.patch("processorOptions", { frame_enhancer_model: v });
+  const setFrameEnhancerBlend = (v: number) => studio.patch("processorOptions", { frame_enhancer_blend: v });
+  const setFaceEditorModel = (v: string) => studio.patch("processorOptions", { face_editor_model: v });
+  const setFaceEditorSmile = (v: number) => studio.patch("processorOptions", { face_editor_smile: v });
+  const setAgeModifierModel = (v: string) => studio.patch("processorOptions", { age_modifier_model: v });
+  const setAgeModifierDirection = (v: number) => studio.patch("processorOptions", { age_modifier_direction: v });
+  const setExpressionRestorerFactor = (v: number) => studio.patch("processorOptions", { expression_restorer_factor: v });
+
+  // Mask & detector: patch no sub-objeto `mask`.
+  const setFaceMaskTypes = (v: string[]) => studio.patch("mask", { types: v });
+  const setFaceMaskPadding = (v: number[]) => studio.patch("mask", { padding: v });
+  const setFaceDetectorModel = (v: string) => studio.patch("mask", { detectorModel: v });
+  const setFaceDetectorSize = (v: string) => studio.patch("mask", { detectorSize: v });
+  const setFaceDetectorAngles = (v: number[]) => studio.patch("mask", { detectorAngles: v });
+  const setFaceLandmarkerModel = (v: string) => studio.patch("mask", { landmarkerModel: v });
+  const setFaceLandmarkerScore = (v: number) => studio.patch("mask", { landmarkerScore: v });
+
+  // Output: patch no sub-objeto `output`.
+  const setOutputFormat = (v: string) => studio.patch("output", { format: v });
+  const setOutputQuality = (v: string) => studio.patch("output", { quality: v });
+  const setOutputVideoEncoder = (v: string) => studio.patch("output", { videoEncoder: v });
+  const setOutputAudioEncoder = (v: string) => studio.patch("output", { audioEncoder: v });
+  const setOutputAudioQuality = (v: number) => studio.patch("output", { audioQuality: v });
+  const setOutputAudioVolume = (v: number) => studio.patch("output", { audioVolume: v });
+
+  // Estados que permanecem locais (não são "Studio" — são UI/auxiliares).
   const [targetDimensions, setTargetDimensions] = useState<{ width: number; height: number } | null>(null);
   const [containerDimensions, setContainerDimensions] = useState<{ width: number; height: number } | null>(null);
   const targetContainerRef = useRef<HTMLDivElement>(null);
 
-  // Mapeamento de Múltiplos Rostos
-  const [detectedTargetFaces, setDetectedTargetFaces] = useState<DetectedFace[]>([]);
-  const [isAnalyzingTargetFaces, setIsAnalyzingTargetFaces] = useState<boolean>(false);
-  const [selectedFaceForModal, setSelectedFaceForModal] = useState<DetectedFace | null>(null);
-  const [faceMappings, setFaceMappings] = useState<Record<number, string>>({});
-  const [referenceFrameNumber, setReferenceFrameNumber] = useState<number>(0);
-
-  // 11 Processadores Oficiais do FaceFusion v3.8.2
-  const [availableProcessors, setAvailableProcessors] = useState<string[]>([
-    "face_swapper",
-    "face_enhancer",
-    "frame_enhancer",
-    "face_editor",
-    "age_modifier",
-    "expression_restorer",
-    "deep_swapper",
-    "lip_syncer",
-    "face_debugger",
-    "frame_colorizer",
-    "background_remover"
-  ]);
-  const [selectedProcessors, setSelectedProcessors] = useState<string[]>(["face_swapper"]);
-  const [autoPreview, setAutoPreview] = useState<boolean>(true);
-
-  // Estados dos 5 Processadores Adicionais
-  const [deepSwapperModel, setDeepSwapperModel] = useState<string>("iperov/elon_musk_224");
-  const [deepSwapperMorph, setDeepSwapperMorph] = useState<number>(100);
-  const [lipSyncerModel, setLipSyncerModel] = useState<string>("wav2lip_gan_96");
-  const [lipSyncerWeight, setLipSyncerWeight] = useState<number>(0.8);
-  const [faceDebuggerItems, setFaceDebuggerItems] = useState<string[]>(["bounding-box", "face-landmark-5", "face-mask"]);
-  const [frameColorizerModel, setFrameColorizerModel] = useState<string>("ddcolor");
-  const [frameColorizerBlend, setFrameColorizerBlend] = useState<number>(100);
-  const [frameColorizerSize, setFrameColorizerSize] = useState<string>("512x512");
-  const [backgroundRemoverModel, setBackgroundRemoverModel] = useState<string>("birefnet_general");
-  const [backgroundRemoverColor, setBackgroundRemoverColor] = useState<string>("transparent");
-
-  // Swapper options
-  const [faceSwapperWeight, setFaceSwapperWeight] = useState<number>(0.85);
-  const [faceMaskBlur, setFaceMaskBlur] = useState<number>(12);
-  const [detectionThreshold, setDetectionThreshold] = useState<number>(0.70);
-  const [smoothing, setSmoothing] = useState<number>(5);
-  const [faceSwapperModel, setFaceSwapperModel] = useState<string>("inswapper_128_fp16");
-  const [faceSwapperPixelBoost, setFaceSwapperPixelBoost] = useState<string>("512x512");
-
-  // Enhancer options
-  const [faceEnhancerModel, setFaceEnhancerModel] = useState<string>("gfpgan_1.4");
-  const [faceEnhancerBlend, setFaceEnhancerBlend] = useState<number>(80);
-  const [faceEnhancerWeight, setFaceEnhancerWeight] = useState<number>(1.0);
-  const [frameEnhancerModel, setFrameEnhancerModel] = useState<string>("span_kendata_x4");
-  const [frameEnhancerBlend, setFrameEnhancerBlend] = useState<number>(80);
-
-  // Additional processors options
-  const [faceEditorModel, setFaceEditorModel] = useState<string>("live_portrait");
-  const [faceEditorSmile, setFaceEditorSmile] = useState<number>(0);
-  const [ageModifierModel, setAgeModifierModel] = useState<string>("styleganex_age");
-  const [ageModifierDirection, setAgeModifierDirection] = useState<number>(0);
-  const [expressionRestorerFactor, setExpressionRestorerFactor] = useState<number>(0.8);
-
-  // Configurações Avançadas de Detecção e Máscara
-  const [faceMaskTypes, setFaceMaskTypes] = useState<string[]>(["box", "occlusion"]);
-  const [faceMaskPadding, setFaceMaskPadding] = useState<number[]>([0, 0, 0, 0]);
-  const [faceDetectorModel, setFaceDetectorModel] = useState<string>("yolo_face");
-  const [faceDetectorSize, setFaceDetectorSize] = useState<string>("640x640");
-  const [faceDetectorAngles, setFaceDetectorAngles] = useState<number[]>([0]);
-  const [faceLandmarkerModel, setFaceLandmarkerModel] = useState<string>("2dfan4");
-  const [faceLandmarkerScore, setFaceLandmarkerScore] = useState<number>(0.5);
-
-  // Export options
-  const [outputFormat, setOutputFormat] = useState<string>("MP4");
-  const [outputQuality, setOutputQuality] = useState<string>("High");
-  const [outputVideoEncoder, setOutputVideoEncoder] = useState<string>("libx264");
-  const [outputAudioEncoder, setOutputAudioEncoder] = useState<string>("aac");
-  const [outputAudioQuality, setOutputAudioQuality] = useState<number>(80);
-  const [outputAudioVolume, setOutputAudioVolume] = useState<number>(100);
-  const [previewOutputUrl, setPreviewOutputUrl] = useState<string | null>(null);
-
-  // Assistente de Pré-Análise & Diagnóstico de Vídeo (Wizard)
+  // Wizard / diagnóstico: ainda locais, podem migrar para hook próprio depois.
   const [isWizardOpen, setIsWizardOpen] = useState<boolean>(false);
   const [isDiagnosing, setIsDiagnosing] = useState<boolean>(false);
   const [diagnosticReport, setDiagnosticReport] = useState<VideoDiagnosticReport | null>(null);
 
-  // Estados de execução
-  const [isPreviewLoading, setIsPreviewLoading] = useState<boolean>(false);
-  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  // Lista estática de processors disponíveis (não é estado mutável).
+  const availableProcessors = [
+    "face_swapper", "face_enhancer", "frame_enhancer", "face_editor",
+    "age_modifier", "expression_restorer", "deep_swapper", "lip_syncer",
+    "face_debugger", "frame_colorizer", "background_remover",
+  ];
 
-  // Drag & Drop
-  const [isDraggingSource, setIsDraggingSource] = useState<boolean>(false);
-  const [isDraggingTarget, setIsDraggingTarget] = useState<boolean>(false);
-
-  // Modal de Exclusão
-  const [jobToDelete, setJobToDelete] = useState<string | null>(null);
-
-  // Configurações do Sistema
+  // Configurações do Sistema (ainda locais — migrar para useConfig em PR futura).
   const [configTempPath, setConfigTempPath] = useState<string>(".temp");
   const [configJobsPath, setConfigJobsPath] = useState<string>(".jobs");
   const [configMemoryStrategy, setConfigMemoryStrategy] = useState<string>("balanced");
