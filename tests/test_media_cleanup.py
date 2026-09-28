@@ -20,17 +20,23 @@ from pathlib import Path
 
 
 def _load_cleanup_logic():
-    """Extrai a função de cleanup do source de routes.py via AST."""
-    routes_path = Path(__file__).parent.parent / "facefusion" / "api" / "routes.py"
-    source = routes_path.read_text(encoding="utf-8")
-    tree = ast.parse(source)
-    func_code = None
-    for node in tree.body:
-        if isinstance(node, ast.FunctionDef) and node.name == "cleanup_temporary_media":
-            func_code = ast.unparse(node)
-            break
-    assert func_code is not None, "cleanup_temporary_media not found"
-    return func_code
+    """Extrai a função de cleanup do source via AST.
+
+    R2: a função continua em _legacy_routes.py (não foi migrada ainda).
+    """
+    candidates = [
+        Path(__file__).parent.parent / "facefusion" / "api" / "_legacy_routes.py",
+        Path(__file__).parent.parent / "facefusion" / "api" / "routes.py",
+    ]
+    for routes_path in candidates:
+        if not routes_path.exists():
+            continue
+        source = routes_path.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef) and node.name == "cleanup_temporary_media":
+                return ast.unparse(node)
+    raise AssertionError("cleanup_temporary_media not found in any routes module")
 
 
 # Implementação de referência (mirror da lógica em routes.py)

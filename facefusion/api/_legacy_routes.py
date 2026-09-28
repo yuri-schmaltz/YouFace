@@ -22,12 +22,10 @@ from facefusion.api.database import get_db, JobModel, SessionLocal
 
 router = APIRouter()
 
-# R2: include sub-routers from facefusion.api.routes.* (each is a thin
-# domain-specific module). Adding a new domain? Create facefusion/api/routes/<x>.py
-# with its own APIRouter() and add an include_router() here.
-from facefusion.api.routes import projects as _projects_module  # noqa: E402
-
-router.include_router(_projects_module.router)
+# R2: sub-router mounting happens in facefusion/api/routes/__init__.py
+# to keep a single source of truth (avoids FastAPI duplicate-path errors
+# when both the legacy and the package __init__ try to include the same
+# router). This file only owns its OWN direct route decorators.
 
 
 def get_user_projects_dir() -> str:

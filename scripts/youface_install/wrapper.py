@@ -367,8 +367,11 @@ def _install_in_venv(flavor: str, force_reinstall: bool,
         return rc
     print()
     print("=== venv pronto ===")
-    print(f"Ative com: source {venv_path}/bin/activate")
-    print(f"Depois:    python run_api.py")
+    print("Para rodar o app:")
+    print(f"  python run_api.py        (auto-detecta este venv)")
+    print(f"  source {venv_path}/bin/activate && python run_api.py   (explícito)")
+    print()
+    print(f"API + UI vão subir em http://127.0.0.1:8000 (ou próxima porta livre).")
     return 0
 
 

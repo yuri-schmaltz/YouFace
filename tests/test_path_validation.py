@@ -23,20 +23,31 @@ from fastapi import HTTPException
 
 
 def _load_validate_safe_path():
-    """Extrai apenas a função `validate_safe_path` do source de routes.py."""
-    routes_path = Path(__file__).parent.parent / "facefusion" / "api" / "routes.py"
-    source = routes_path.read_text(encoding="utf-8")
-    tree = ast.parse(source)
-    func_code = None
-    for node in tree.body:
-        if isinstance(node, ast.FunctionDef) and node.name == "validate_safe_path":
-            func_code = ast.unparse(node)
-            break
-    assert func_code is not None, "validate_safe_path not found in routes.py"
-    from typing import Optional, List
-    namespace = {"os": os, "HTTPException": HTTPException, "Optional": Optional, "List": List}
-    exec(compile(func_code, "<isolated>", "exec"), namespace)
-    return namespace["validate_safe_path"]
+    """Extrai a função `validate_safe_path` do source.
+
+    R2: validate_safe_path foi movido para facefusion/api/routes/common.py
+    quando criamos o pacote routes/. Este teste procura nos dois lugares
+    para back-compat com versões anteriores do repo.
+    """
+    candidates = [
+        Path(__file__).parent.parent / "facefusion" / "api" / "routes" / "common.py",
+        Path(__file__).parent.parent / "facefusion" / "api" / "_legacy_routes.py",
+        Path(__file__).parent.parent / "facefusion" / "api" / "routes.py",
+    ]
+    for routes_path in candidates:
+        if not routes_path.exists():
+            continue
+        source = routes_path.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+        for node in tree.body:
+            if isinstance(node, ast.FunctionDef) and node.name == "validate_safe_path":
+                func_code = ast.unparse(node)
+                from typing import Optional, List
+                namespace = {"os": os, "HTTPException": HTTPException,
+                             "Optional": Optional, "List": List}
+                exec(compile(func_code, "<isolated>", "exec"), namespace)
+                return namespace["validate_safe_path"]
+    raise AssertionError("validate_safe_path not found in any routes module")
 
 
 validate_safe_path = _load_validate_safe_path()
