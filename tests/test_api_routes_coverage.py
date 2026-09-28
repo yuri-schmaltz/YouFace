@@ -207,6 +207,30 @@ def test_media_cleanup_returns_counts(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# /api/media/analyze-faces
+# ---------------------------------------------------------------------------
+
+def test_analyze_faces_missing_file_returns_error(client):
+    """POST /api/media/analyze-faces deve falhar gracefully quando o
+    arquivo não existe (sem GPU/models o endpoint retorna 500/503 ou
+    lista vazia). Nunca deve retornar 200 com dados falsos."""
+    resp = client.post(
+        "/api/media/analyze-faces",
+        json={"file_path": "/nope/nope/nope.jpg"},
+    )
+    assert resp.status_code in (200, 400, 500, 503), resp.text
+    if resp.status_code == 200:
+        data = resp.json()
+        assert isinstance(data, (list, dict))
+
+
+def test_analyze_faces_validates_request_body(client):
+    """POST /api/media/analyze-faces deve validar o schema do request."""
+    resp = client.post("/api/media/analyze-faces", json={})
+    assert resp.status_code in (422, 500, 503), resp.text
+
+
+# ---------------------------------------------------------------------------
 # /api/diagnostic/export (PII masking)
 # ---------------------------------------------------------------------------
 

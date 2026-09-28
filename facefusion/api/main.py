@@ -138,11 +138,12 @@ def find_free_port(start_port: int = 8000, max_attempts: int = 100) -> int:
 def write_frontend_config(port: int) -> None:
     import os
     import json
+    from facefusion import logger
     backend_dir = os.path.dirname(os.path.abspath(__file__))
     root_dir = os.path.abspath(os.path.join(backend_dir, "..", ".."))
     frontend_public_dir = os.path.join(root_dir, "frontend", "public")
     frontend_out_dir = os.path.join(root_dir, "frontend", "out")
-    
+
     # Caminho relativo — o frontend passa a usar `/api/...` na mesma origem,
     # o que destrava LAN, proxy reverso e HTTPS compartilhado.
     # Mantemos compatibilidade com resolvers antigos gravando tambem a URL
@@ -152,24 +153,24 @@ def write_frontend_config(port: int) -> None:
         "apiUrlAbsolute": f"http://localhost:{port}",
         "apiPathPrefix": "/api",
     }
-    
+
     if os.path.exists(frontend_public_dir):
         config_path = os.path.join(frontend_public_dir, "config.json")
         try:
             with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(config_data, f, indent=4)
-            print(f"[API] Gravado config.json do frontend em: {config_path}", flush=True)
+            logger.info(f"[API] Gravado config.json do frontend em: {config_path}", __name__)
         except Exception as e:
-            print(f"[API] Erro ao gravar config.json em public: {str(e)}", flush=True)
-            
+            logger.error(f"[API] Erro ao gravar config.json em public: {str(e)}", __name__)
+
     if os.path.exists(frontend_out_dir):
         config_path = os.path.join(frontend_out_dir, "config.json")
         try:
             with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(config_data, f, indent=4)
-            print(f"[API] Gravado config.json do frontend em: {config_path}", flush=True)
+            logger.info(f"[API] Gravado config.json do frontend em: {config_path}", __name__)
         except Exception as e:
-            print(f"[API] Erro ao gravar config.json em out: {str(e)}", flush=True)
+            logger.error(f"[API] Erro ao gravar config.json em out: {str(e)}", __name__)
 
 
 if __name__ == "__main__":

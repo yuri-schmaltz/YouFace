@@ -4,7 +4,7 @@ from sqlalchemy import asc
 from facefusion.api.database import SessionLocal, JobModel
 from facefusion.jobs import job_runner
 from facefusion.core import process_step
-from facefusion import state_manager
+from facefusion import state_manager, logger
 
 
 _worker_stop_event = threading.Event()
@@ -31,7 +31,7 @@ def cancel_running_job(job_id: str) -> bool:
         if _current_running_job_id == job_id:
             from facefusion import process_manager
             process_manager.stop()
-            print(f"[Worker] Sinal de cancelamento enviado para o job {job_id}.", flush=True)
+            logger.warning(f"[Worker] Sinal de cancelamento enviado para o job {job_id}.", __name__)
             return True
     return False
 
@@ -45,12 +45,12 @@ def start_worker():
 
 def stop_worker():
     global _worker_stop_event
-    print("[Worker] Sinalizando encerramento para o worker loop...", flush=True)
+    logger.info("[Worker] Sinalizando encerramento para o worker loop...", __name__)
     _worker_stop_event.set()
 
 
 def worker_loop():
-    print("[Worker] Inicializando fila sequencial no segundo plano...", flush=True)
+    logger.info("[Worker] Inicializando fila sequencial no segundo plano...", __name__)
     
     # Garantir que JOBS_PATH e o state_manager estejam devidamente carregados nesta thread
     try:
@@ -66,25 +66,25 @@ def worker_loop():
         
         jobs_path = state_manager.get_item('jobs_path') or get_default_path('data')
         job_manager.init_jobs(jobs_path)
-        print(f"[Worker] Caminho de jobs inicializado: {jobs_path}", flush=True)
+        logger.info(f"[Worker] Caminho de jobs inicializado: {jobs_path}", __name__)
     except Exception as e:
-        print(f"[Worker] Erro crítico ao inicializar parâmetros: {str(e)}", flush=True)
+        logger.error(f"[Worker] Erro crítico ao inicializar parâmetros: {str(e)}", __name__)
 
     # Recuperação de jobs travados em 'processing' devido a desligamento ou reinício
     try:
         db = SessionLocal()
         stuck_jobs = db.query(JobModel).filter_by(status="processing").all()
         for stuck_job in stuck_jobs:
-            print(f"[Worker] Recuperando job travado {stuck_job.id} para status 'failed'.", flush=True)
+            logger.error(f"[Worker] Recuperando job travado {stuck_job.id} para status 'failed'.", __name__)
             stuck_job.status = "failed"
             stuck_job.progress = 0
             stuck_job.error_message = "O servidor foi reiniciado enquanto esta tarefa estava sendo processada."
         db.commit()
         db.close()
     except Exception as e:
-        print(f"[Worker] Erro ao recuperar jobs travados: {str(e)}", flush=True)
+        logger.error(f"[Worker] Erro ao recuperar jobs travados: {str(e)}", __name__)
 
-    print("[Worker] Loop de escuta de tarefas iniciado.", flush=True)
+    logger.info("[Worker] Loop de escuta de tarefas iniciado.", __name__)
     while not _worker_stop_event.is_set():
         try:
             db = SessionLocal()
@@ -93,7 +93,7 @@ def worker_loop():
             
             if job:
                 job_id = job.id
-                print(f"[Worker] Selecionado job para processamento: {job_id}", flush=True)
+                logger.info(f"[Worker] Selecionado job para processamento: {job_id}", __name__)
                 
                 # Atualizar estado para processando
                 job.status = "processing"
@@ -117,16 +117,16 @@ def worker_loop():
                     if job_to_update:
                         # Se já foi marcado como cancelado, não sobrescrever para completed
                         if job_to_update.status == "failed" and "Cancelado" in (job_to_update.error_message or ""):
-                            print(f"[Worker] Job {job_id} foi cancelado pelo usuário.", flush=True)
+                            logger.warning(f"[Worker] Job {job_id} foi cancelado pelo usuário.", __name__)
                         elif success:
                             job_to_update.status = "completed"
                             job_to_update.progress = 100
-                            print(f"[Worker] Job {job_id} concluído com sucesso.", flush=True)
+                            logger.info(f"[Worker] Job {job_id} concluído com sucesso.", __name__)
                         else:
                             job_to_update.status = "failed"
                             job_to_update.progress = 0
                             job_to_update.error_message = "Erro de execução nos passos do FaceFusion."
-                            print(f"[Worker] Job {job_id} falhou nos passos de execução.", flush=True)
+                            logger.info(f"[Worker] Job {job_id} falhou nos passos de execução.", __name__)
                         db.commit()
                         
                         # Sincronizar status com project.json na pasta Vídeos
@@ -150,7 +150,7 @@ def worker_loop():
                 except Exception as e:
                     import traceback
                     error_trace = traceback.format_exc()
-                    print(f"[Worker] Falha ao rodar o job {job_id}: {str(e)}\n{error_trace}", flush=True)
+                    logger.error(f"[Worker] Falha ao rodar o job {job_id}: {str(e)}\n{error_trace}", __name__)
                     
                     db = SessionLocal()
                     job_to_update = db.query(JobModel).filter_by(id=job_id).first()
@@ -185,6 +185,6 @@ def worker_loop():
                 db.close()
                 _worker_stop_event.wait(1)
         except Exception as e:
-            print(f"[Worker] Erro no loop de execução do worker: {str(e)}", flush=True)
+            logger.error(f"[Worker] Erro no loop de execução do worker: {str(e)}", __name__)
             _worker_stop_event.wait(2)
 

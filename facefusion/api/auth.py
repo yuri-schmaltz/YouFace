@@ -13,7 +13,9 @@ Usage from the client:
   fetch("/api/jobs", { headers: { "Authorization": "Bearer <token>" } })
 
 Usage from the server:
-  app.add_middleware(BearerAuthMiddleware, token="...")
+  # Token is read from the FACEFUSION_API_TOKEN env var at startup.
+  # Leave it unset to disable authentication (local-only mode).
+  export FACEFUSION_API_TOKEN="my-secret-token"
 
 Whitelist:
   - /api/hardware/* : always public (the frontend needs to poll these
