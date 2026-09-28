@@ -2,14 +2,19 @@
 """
 Entry-point do instalador inteligente YouFace.
 
-Uso:
-    python scripts/youface_install.py --info
-    python scripts/youface_install.py --auto
-    python scripts/youface_install.py --auto --dry-run
-    python scripts/youface_install.py cuda@13
-    python scripts/youface_install.py --auto --yes --force-reinstall
+Zero-args instala tudo automaticamente:
+    python scripts/youface_install.py
+Equivalente a:
+    python scripts/youface_install.py --auto --use-venv --yes
 
-Para a versão upstream original, use `python install.py <flavor>`.
+Uso:
+    python scripts/youface_install.py                # auto-detect tudo
+    python scripts/youface_install.py --info         # print env + recommendation
+    python scripts/youface_install.py --dry-run      # preview sem executar
+    python scripts/youface_install.py --auto         # detect flavor, install
+    python scripts/youface_install.py --auto --dry-run
+    python scripts/youface_install.py cuda@13        # flavor explícito
+    python scripts/youface_install.py --break-system-packages  # install system-wide
 """
 import os
 import sys

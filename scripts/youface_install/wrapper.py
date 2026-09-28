@@ -559,7 +559,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    """Entry-point. When called with no argv (e.g. `python install.py`),
+    defaults to --auto --use-venv --yes for the zero-friction UX.
+    """
+    raw_argv = list(argv) if argv is not None else sys.argv[1:]
+    if not raw_argv:
+        # Zero-args: activate all the smart defaults so the user just runs
+        # `python install.py` and gets a working install.
+        raw_argv = ["--auto", "--use-venv", "--yes"]
+
+    args = build_parser().parse_args(raw_argv)
 
     if args.fix_cuda:
         args.auto = True

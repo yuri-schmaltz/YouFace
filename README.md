@@ -105,7 +105,9 @@ to these workflows, so behavior is identical between modes.
 
 ### Web UI (recommended)
 ```bash
-# 1. install Python dependencies (same as upstream)
+# 1. Install Python dependencies (zero-args, smart installer)
+#    Detects GPU/CUDA, picks the right onnxruntime flavor, creates a .venv
+#    and installs everything automatically.
 python install.py
 
 # 2. install frontend dependencies and build the static bundle
@@ -115,11 +117,32 @@ npm run build
 cd ..
 
 # 3. launch the API + UI (auto-picks a free port)
+source .venv/bin/activate   # activate the venv created by step 1
 python run_api.py
 ```
 The startup script prints the URL of the cockpit (e.g.
 `http://127.0.0.1:8000`). Open it in a browser — no further configuration
 required.
+
+### Installer flags (advanced)
+
+`python install.py` already does the right thing for most users, but you
+can override the defaults:
+
+```bash
+python install.py --info              # show detected hardware + recommended flavor
+python install.py --dry-run           # preview pip commands without executing
+python install.py --auto              # same as zero-args; explicit form
+python install.py --use-venv          # install into a .venv (default in zero-args mode)
+python install.py --break-system-packages  # system-wide install on PEP 668 systems
+python install.py default             # legacy upstream positional (still works)
+python install.py cuda@13             # explicit flavor (overrides --auto)
+```
+
+On Debian 12+/Ubuntu 23.04+/Mint 22+ the system Python is PEP 668
+externally-managed. The smart wrapper detects this and either creates a
+`.venv` (recommended) or adds `--break-system-packages` automatically
+when the upstream installer fails silently.
 
 ### CLI (legacy)
 The original CLI is still available and fully supported:

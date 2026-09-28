@@ -331,3 +331,116 @@ def test_verify_onnxruntime_installed_returns_bool():
     assert isinstance(_verify_onnxruntime_installed("default"), bool)
     assert isinstance(_verify_onnxruntime_installed("cuda@13"), bool)
     assert isinstance(_verify_onnxruntime_installed("nonexistent"), bool)
+
+
+def test_cli_zero_args_dispatches_to_auto_venv_yes():
+    """python install.py (sem args) deve despachar para auto+use-venv+yes.
+
+    O teste checa que o caminho zero-args entra no wrapper (não no upstream)
+    e aciona o pre-flight + tentaria usar .venv. Não esperamos rc=0 porque
+    sem rede o pip install do .venv vai falhar — mas a saída NÃO deve ser
+    a help do upstream nem o erro de argumento posicional faltando.
+    """
+    proc = subprocess.run(
+        [sys.executable, "install.py"],  # zero args
+        capture_output=True, text=True, cwd=REPO_ROOT, timeout=20,
+    )
+    combined = proc.stdout + proc.stderr
+    # Não pode ser a help do upstream
+    assert "default,cuda@12,cuda@13,openvino" not in combined
+    # Não pode ser o erro de missing positional do upstream
+    assert "the following arguments are required: onnxruntime" not in combined
+    # Tem que ter entrado no wrapper (pre-flight visível)
+    assert "Pre-flight" in combined or "selected flavor" in combined or "venv" in combined.lower()
+
+
+def test_cli_dispatcher_routes_zero_args_to_wrapper():
+    """Garante que o dispatcher install.py detecta zero args e injeta
+    os defaults smart antes de chamar o wrapper."""
+    # Monkey-patch wrapper.main para registrar os args que receberia.
+    sentinel = "/tmp/_youface_zero_args_test.txt"
+    if os.path.exists(sentinel):
+        os.remove(sentinel)
+    script = textwrap.dedent(f"""
+        import sys
+        # Intercepta wrapper.main antes do install.py rodar.
+        from scripts.youface_install import wrapper
+        orig_main = wrapper.main
+        def fake_main(argv=None):
+            with open({sentinel!r}, 'w') as f:
+                f.write(repr(argv))
+            return 0
+        wrapper.main = fake_main
+        sys.argv = ['install.py']
+        exec(open('install.py').read())
+    """)
+    proc = subprocess.run(
+        [sys.executable, "-c", script],
+        capture_output=True, text=True, cwd=REPO_ROOT, timeout=15,
+    )
+    assert proc.returncode == 0, f"stderr: {proc.stderr}"
+    with open(sentinel) as f:
+        recorded = f.read().strip()
+    # install.py sem args injetou os defaults smart
+    assert "'--auto'" in recorded
+    assert "'--use-venv'" in recorded
+    assert "'--yes'" in recorded
+    os.remove(sentinel)
+
+
+def test_cli_positional_default_still_works():
+    """Back-compat: `python install.py default` ainda passa pro upstream."""
+    rc, out, err = run_cli("default", "--help")
+    # Upstream installer aceita --help e mostra menu com choices
+    assert rc == 0
+    assert "default,cuda@12" in out  # upstream choices menu
+
+
+def test_cli_positional_cuda12_still_works():
+    """Back-compat: `python install.py cuda@12` ainda passa pro upstream."""
+    rc, out, err = run_cli("cuda@12", "--help")
+    assert rc == 0
+    assert "default,cuda@12" in out  # upstream choices menu
+
+
+def test_wrapper_main_with_no_argv_uses_defaults():
+    """wrapper.main([]) deve auto-ativar --auto --use-venv --yes."""
+    from unittest import mock
+    from youface_install import wrapper
+
+    # Capturar os args finais que chegariam em cmd_install
+    captured = {}
+    real_cmd_install = wrapper.cmd_install
+
+    def fake_cmd_install(args):
+        captured["args"] = args
+        return 0  # sucesso fake
+
+    with mock.patch.object(wrapper, "cmd_install", side_effect=fake_cmd_install):
+        # Mockar input() para que qualquer prompt retorne 'n' (sem bloquear)
+        with mock.patch("builtins.input", return_value="n"):
+            rc = wrapper.main([])
+    assert rc == 0
+    args = captured["args"]
+    assert args.auto is True
+    assert args.use_venv is True
+    assert args.yes is True
+
+
+def test_wrapper_main_with_explicit_flavor_no_auto():
+    """wrapper.main(['cuda@12']) deve usar flavor explícito sem auto."""
+    from unittest import mock
+    from youface_install import wrapper
+
+    captured = {}
+    def fake_cmd_install(args):
+        captured["args"] = args
+        return 0
+
+    with mock.patch.object(wrapper, "cmd_install", side_effect=fake_cmd_install):
+        with mock.patch("builtins.input", return_value="n"):
+            rc = wrapper.main(["cuda@12"])
+    assert rc == 0
+    args = captured["args"]
+    assert args.auto is False
+    assert args.flavor == "cuda@12"
