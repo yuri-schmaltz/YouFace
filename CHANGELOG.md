@@ -208,3 +208,99 @@ upstream `3.6.1` plus 16 fork-specific commits. **Behind** upstream `3.7.0` / `3
 Inherited from upstream `facefusion/facefusion`. See upstream
 [`CHANGELOG.md`](https://github.com/facefusion/facefusion/blob/master/CHANGELOG.md)
 for everything before `3.6.1`.
+
+## [3.9.1-my.1] — 2026-09-28
+
+**Fork base:** upstream `3.9.0` (sem mudança).
+**Status:** Gran finale do gauntlet. **149 novos testes** em 9 suítes, **+2.000 LoC Python + 1.000 LoC TS**. Sem mudança de upstream.
+
+### ✨ Highlights (gauntlet R7..R16)
+
+#### R7 — Multi-tenant auth + quotas (#6)
+- Novo `facefusion/api/tenants.py` com `TenantModel`, `TenantUsageModel`, hash SHA-256 das API keys.
+- `TenantMiddleware` resolve o tenant via `X-API-Key` ou `Authorization: Bearer`, decora response com `X-RateLimit-Limit / X-RateLimit-Used / X-RateLimit-Remaining / X-RateLimit-Period` e `X-Tenant-Id` / `X-Tenant-Name`.
+- Endpoints admin: `POST/GET/DELETE /api/admin/tenants`, `/api/admin/tenants/{id}/{rotate,disable,enable,quota}`, `GET /api/admin/usage`.
+- Quota ledger cobra minutos de wall-time por job completed/failed. Default 1.000 min/mês. `monthly_quota_minutes=-1` → unlimited.
+- **Bug fix (pré-existente):** `is_public_path` agora reconhece os caminhos com prefixo `/api` (antes `/api/config` retornava 401 indevidamente).
+- **Bug fix (pré-existente):** `BearerAuthMiddleware` relê `FACEFUSION_API_TOKEN` a cada request (antes era cacheado na `__init__`, o que quebrava `os.environ` patches em testes).
+- `tenant_id` agora é gravado em `JobModel.webhook_url`/`tenant_id` para accounting e webhook ownership.
+
+#### R8 — Webhooks de conclusão (#7)
+- Novo `facefusion/api/webhooks.py` com dispatcher síncrono (urllib stdlib, zero deps novas).
+- Retry exponencial (1s, 2s, 4s, 8s, 16s, máx 5 tentativas). Configurável via `FACEFUSION_WEBHOOK_*` env vars.
+- HMAC `sha256=<hex>` em `X-Webhook-Signature` quando `webhook_secret` é fornecido. `X-Webhook-Id` carrega `job_id` para idempotência no consumidor.
+- Dead-letter em tabela `webhook_deliveries`; admin pode inspecionar via `GET /api/admin/webhooks[?job_id&status]` + `/api/admin/webhooks/failed`.
+- Worker chama `fire_job_completion()` no terminal state (completed/failed/cancelled). Falha do webhook nunca bloqueia o job.
+- Novos campos em `JobModel`: `webhook_url`, `webhook_secret`, `tenant_id`, `started_at`.
+
+#### R9 — Presets / recipes (#5)
+- Novo `facefusion/api/presets.py` com CRUD completo (`PresetModel`, `PresetCreate`, `PresetUpdate`, `PresetData` espelhando `JobCreateRequest`).
+- Endpoints `GET/POST/PUT/DELETE /api/presets` + `POST /api/presets/{id}/apply` (retorna merged data pronto para `POST /api/jobs`).
+- Scoping: tenants só veem seus próprios presets + os marcados `shared: true`. Apenas admin pode criar `shared: true`.
+
+#### R10 — Métricas automáticas de qualidade (#8)
+- Novo `facefusion/api/metrics.py` com `cosine_similarity`, `temporal_consistency`, `pose_drift` (com wrap-around em ±π).
+- `compute_job_metrics(source_embedding, output_embeddings, output_poses)` retorna `{identity_similarity, temporal_consistency, pose_drift, frames_analyzed}`.
+- Persistência em `job_metrics` table. Endpoint `GET /api/jobs/{id}/metrics`.
+- Se GPU/InsightFace ausente, métricas ficam `None` em vez de falhar o job (graceful degradation).
+
+#### R11 — Plugin marketplace (#4)
+- Novo `facefusion/api/plugins.py` descobrindo entry-points via `importlib.metadata.entry_points(group="facefusion.processors")`.
+- State persistido em `facefusion/api/plugins.json` (enable/disable toggle). `disable_plugin` sobrevive restart.
+- Endpoints admin `GET/POST /admin/plugins`, `/admin/plugins/{name}/{enable,disable}`, `/admin/plugins/reload`.
+- Plugin quebra → fica registrado com `summary: "failed to load: ..."` em vez de derrubar o app.
+
+#### R12 — Treinamento dedicado (#1)
+- Novo `facefusion/api/trainer.py` com pipeline extract → aggregate → save (`.npy` L2-normalizado de 512-d).
+- Worker thread in-process; progresso persistido a cada 5 imagens via `TrainJobModel`. Callbacks `on_progress(processed, total, faces)`.
+- Endpoints `POST /api/train`, `GET /api/train[/{id}[/result]]`, `DELETE /api/train/{id}`.
+- Stub embedder/detector para CI sem GPU; produção chama `facefusion.face_recognizer`.
+- Versão simplificada (não VAE completo como Faceswap); trade-off documentado no docstring.
+
+#### R13 — Backend opcional SimSwap (#2)
+- Novo `facefusion/api/backends.py` com `Backend` protocol + `InsightFaceBackend` (default) + `SimSwapBackend` (stub gated por `pip install facefusion[simswap]`).
+- `resolve_backend(name)` faz fallback automático para `insightface` se o backend solicitado não estiver instalado.
+- Endpoints `GET /api/backends`, `GET /api/backends/{name}`, `GET /api/backends/{name}/active` (lazy-load com cache).
+- Novo campo `face_swapper_backend` em `JobCreateRequest`.
+
+#### R14 — Head-swap completo (#3)
+- Novo `facefusion/api/headswap.py` com `SwapMode` enum (`face` / `head` / `expression_only`) + `HeadSwapConfig` (mask_expansion_px, include_hair, include_ears, include_neck).
+- Endpoint `GET /api/jobs/{id}/head-swap-info` retorna a config usada.
+- Worker passa `head_swap` para o LivePortrait pipeline (máscara estendida vs padrão).
+
+#### R15 — Compose multi-perfil (#9)
+- 3 novos profiles: `docker-compose.nvidia.yml` (CUDA), `docker-compose.amd.yml` (ROCm), `docker-compose.cpu.yml` (sem GPU).
+- `release/start.sh` agora detecta GPU via `nvidia-smi` / `/dev/dri` / `rocm-smi` e seleciona o profile. Override manual via `--profile`.
+- Novo `docs/DOCKER_PROFILES.md` com troubleshooting por vendor.
+
+#### R16 — UI i18n (#10)
+- Novo `frontend/src/i18n/` com hook `useLocale()`, helper `t(key, values?)` e persistência em localStorage.
+- Locale files `en.ts` + `pt-BR.ts` com 30+ strings (actions, job states, navigation, errors).
+- `<LocalePicker />` component no header do cockpit.
+- Zero deps npm; interpolação `{name}` simples. `docs/I18N.md` com guia de adicionar novos idiomas.
+
+### 🧪 Tests (149 novos, total 252)
+
+| Suite | Tests | Tempo |
+|---|---|---|
+| `test_api_auth.py` | 13 | 1.0s |
+| `test_api_tenants.py` | 23 | 1.5s |
+| `test_api_webhooks.py` | 12 | 7.5s |
+| `test_api_presets.py` | 17 | 2.8s |
+| `test_api_metrics.py` | 25 | 1.0s |
+| `test_api_plugins.py` | 17 | 1.1s |
+| `test_api_trainer.py` | 11 | 2.1s |
+| `test_api_backends.py` | 19 | 1.1s |
+| `test_api_headswap.py` | 12 | 1.3s |
+
+### 🐛 Fixed (pré-existentes)
+
+- `is_public_path` em `auth.py` agora reconhece paths com prefixo `/api` (antes `/api/config` caía no path whitelist errado).
+- `BearerAuthMiddleware` relê env var por request, não por startup, habilitando testes com `patch.dict(os.environ)`.
+- Pydantic em `webhooks.py` e `trainer.py` usando `model_config = ConfigDict(extra="allow")` para tolerar novos campos upstream sem quebra.
+
+### 📦 Housekeeping
+
+- `facefusion/api/routes/` agora tem 11 sub-routers (was 5); cada um com `__init__.py` e guard admin consistente.
+- `facefusion/api/database.py::init_db()` agora bootstraps **6 tabelas** (jobs + tenants + tenant_usage + webhook_deliveries + presets + job_metrics + train_jobs) de forma idempotente via `Base.metadata.create_all`.
+- Novo `docs/DOCKER_PROFILES.md`, `docs/I18N.md`.

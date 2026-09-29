@@ -38,6 +38,12 @@ class JobModel(Base):
     step: Optional[str] = Column(String, nullable=True)
     project_name: Optional[str] = Column(String, nullable=True)
     error_message: Optional[str] = Column(Text, nullable=True)
+    # Webhook (R8 of gauntlet): optional URL to POST when the job reaches
+    # a terminal state. Empty/None means no webhook.
+    webhook_url: Optional[str] = Column(String, nullable=True)
+    webhook_secret: Optional[str] = Column(String, nullable=True)
+    tenant_id: Optional[str] = Column(String, nullable=True, index=True)
+    started_at: Optional[datetime.datetime] = Column(DateTime, nullable=True)
     created_at: datetime.datetime = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at: datetime.datetime = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 
@@ -56,12 +62,50 @@ def init_db():
             conn.execute(text("ALTER TABLE jobs ADD COLUMN project_name TEXT"))
     except Exception:
         pass
+    # Webhook columns (R8 of gauntlet). Add incrementally so existing
+    # databases upgrade without manual migration.
+    for col, typedef in (
+        ("webhook_url", "TEXT"),
+        ("webhook_secret", "TEXT"),
+        ("tenant_id", "TEXT"),
+        ("started_at", "DATETIME"),
+    ):
+        try:
+            from sqlalchemy import text
+            with engine.begin() as conn:
+                conn.execute(text(f"ALTER TABLE jobs ADD COLUMN {col} {typedef}"))
+        except Exception:
+            pass
     # Multi-tenant support (R7 of gauntlet): create tenants + tenant_usage
     # tables on first boot. Idempotent and best-effort — see
     # facefusion/api/tenants.py for the design.
     try:
         from facefusion.api.tenants import ensure_tenant_tables
         ensure_tenant_tables()
+    except Exception:
+        pass
+    # Webhook deliveries table (R8 of gauntlet). See webhooks.py.
+    try:
+        from facefusion.api.webhooks import ensure_webhook_tables
+        ensure_webhook_tables()
+    except Exception:
+        pass
+    # Presets table (R9 of gauntlet). See presets.py.
+    try:
+        from facefusion.api.presets import ensure_preset_tables
+        ensure_preset_tables()
+    except Exception:
+        pass
+    # Job metrics table (R10 of gauntlet). See metrics.py.
+    try:
+        from facefusion.api.metrics import ensure_metric_tables
+        ensure_metric_tables()
+    except Exception:
+        pass
+    # Training jobs table (R12 of gauntlet). See trainer.py.
+    try:
+        from facefusion.api.trainer import ensure_train_tables
+        ensure_train_tables()
     except Exception:
         pass
 

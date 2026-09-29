@@ -37,6 +37,13 @@ from facefusion.api.routes import hardware as _hardware  # noqa: E402
 from facefusion.api.routes import config as _config  # noqa: E402
 from facefusion.api.routes import common as _common  # noqa: E402
 from facefusion.api.routes import tenants as _tenants  # noqa: E402
+from facefusion.api.routes import webhooks as _webhooks  # noqa: E402
+from facefusion.api.routes import presets as _presets  # noqa: E402
+from facefusion.api.routes import metrics as _metrics  # noqa: E402
+from facefusion.api.routes import plugins as _plugins  # noqa: E402
+from facefusion.api.routes import train as _train  # noqa: E402
+from facefusion.api.routes import backends as _backends  # noqa: E402
+from facefusion.api.routes import headswap as _headswap  # noqa: E402
 
 
 # Include sub-routers from migrated submodules into the main `router`.
@@ -46,6 +53,13 @@ router.include_router(_projects.router)
 router.include_router(_hardware.router)
 router.include_router(_config.router)
 router.include_router(_tenants.router)
+router.include_router(_webhooks.router)
+router.include_router(_presets.router)
+router.include_router(_metrics.router)
+router.include_router(_plugins.router)
+router.include_router(_train.router)
+router.include_router(_backends.router)
+router.include_router(_headswap.router)
 
 
 __all__ = [

@@ -1,0 +1,30 @@
+version: '3.8'
+
+# GPU profile — AMD ROCm via the ROCm docker runtime.
+# Use: docker compose -f docker-compose.yml -f docker-compose.amd.yml up
+#
+# Requires:
+#   - ROCm >= 5.6 installed on the host
+#   - amdgpu driver loaded (lsmod | grep amdgpu)
+#   - Devices /dev/kfd and /dev/dri/* accessible to the container
+#
+# NOTE: ROCm support in onnxruntime is shipped as the
+# 'onnxruntime-rocm' pip package. The Dockerfile must install that
+# flavor; the upstream installer (facefusion/installer.py) detects
+# AMD GPUs and selects the right wheel automatically.
+
+services:
+  backend:
+    devices:
+      - /dev/kfd:/dev/kfd
+      - /dev/dri:/dev/dri
+    group_add:
+      - video
+      - render
+    environment:
+      - HSA_OVERRIDE_GFX_VERSION=10.3.0  # adjust for your GPU; this is a common default
+      - FACEFUSION_EXECUTION_PROVIDERS=rocm
+
+  frontend:
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000

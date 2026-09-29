@@ -128,7 +128,34 @@ def worker_loop():
                             job_to_update.error_message = "Erro de execução nos passos do FaceFusion."
                             logger.info(f"[Worker] Job {job_id} falhou nos passos de execução.", __name__)
                         db.commit()
-                        
+
+                        # Webhook dispatch (R8 of gauntlet): fire-and-forget
+                        # notification when the job reaches a terminal state.
+                        # Failures here never block the worker — they're
+                        # recorded in webhook_deliveries for later inspection.
+                        try:
+                            if job_to_update.webhook_url:
+                                import time as _time
+                                started = job_to_update.started_at or job_to_update.created_at
+                                duration = max(0.0, (_time.time() - started.timestamp())) if started else 0.0
+                                from facefusion.api.webhooks import fire_job_completion
+                                fire_job_completion(
+                                    job_id=job_id,
+                                    webhook_url=job_to_update.webhook_url,
+                                    status=job_to_update.status,
+                                    output_url=job_to_update.output_path,
+                                    error_message=job_to_update.error_message,
+                                    duration_seconds=duration,
+                                    progress=job_to_update.progress,
+                                    tenant_id=job_to_update.tenant_id,
+                                    secret=job_to_update.webhook_secret,
+                                )
+                                # Charge quota (R7) on completion
+                                from facefusion.api.tenants import record_job_completion
+                                record_job_completion(job_to_update.tenant_id, duration)
+                        except Exception as e:
+                            logger.warning(f"[Worker] Webhook dispatch error for job {job_id}: {e}", __name__)
+
                         # Sincronizar status com project.json na pasta Vídeos
                         if job_to_update.output_path:
                             try:

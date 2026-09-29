@@ -1,0 +1,29 @@
+version: '3.8'
+
+# CPU-only profile — slowest but works everywhere (no GPU drivers needed).
+# Use: docker compose -f docker-compose.yml -f docker-compose.cpu.yml up
+#
+# Recommended for:
+#   - First-time setup (verify install without GPU)
+#   - CI / smoke tests
+#   - Servers without discrete GPUs (e.g. AWS t3 instances)
+#
+# Performance expectations: ~5-15× slower than CUDA for typical
+# face-swap jobs. Plan batch sizes accordingly.
+
+services:
+  backend:
+    # No GPU resource reservation; CPU only.
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 8G
+    environment:
+      - FACEFUSION_EXECUTION_PROVIDERS=cpu
+      # Reduce thread count to avoid contention on shared CI runners.
+      - FACEFUSION_EXECUTION_THREAD_COUNT=2
+
+  frontend:
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000

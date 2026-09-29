@@ -5,7 +5,7 @@ import json
 import datetime
 import sys
 from typing import List, Dict, Any, Optional
-from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks, Depends
+from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks, Depends, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy import desc
@@ -80,6 +80,10 @@ class JobCreateRequest(BaseModel):
     project_name: Optional[str] = None
     source_paths: List[str]
     target_path: str
+    # Webhook (R8): optional URL to POST when the job finishes. If set,
+    # a JSON payload is delivered (see facefusion/api/webhooks.py).
+    webhook_url: Optional[str] = None
+    webhook_secret: Optional[str] = None
     face_swapper_weight: Optional[float] = 0.5
     face_mask_blur: Optional[float] = 0.3
     detection_threshold: Optional[float] = 0.5
@@ -90,6 +94,9 @@ class JobCreateRequest(BaseModel):
     trim_frame_end: Optional[int] = None
     face_swapper_model: Optional[str] = "hyperswap_1a_256"
     face_swapper_pixel_boost: Optional[str] = None
+    # R13: optional backend selector (insightface | simswap)
+    # R14: optional head-swap mode (extends mask to full cranium)
+    head_swap: Optional[Dict[str, Any]] = None
     face_enhancer_model: Optional[str] = "gfpgan_1.4"
     face_enhancer_blend: Optional[int] = 80
     face_enhancer_weight: Optional[float] = 1.0
@@ -730,7 +737,7 @@ def apply_processor_args(step_args: Dict[str, Any], request: JobCreateRequest) -
 
 
 @router.post("/jobs")
-def create_job(request: JobCreateRequest, db: Session = Depends(get_db)) -> Dict[str, Any]:
+def create_job(request: JobCreateRequest, db: Session = Depends(get_db), http_request: Request = None) -> Dict[str, Any]:
     """
     Cria uma nova tarefa de Face Swap na fila persistente do banco de dados e no disco.
     Suporta mapeamento de múltiplos rostos ou fluxo padrão de face única/tudo.
@@ -897,6 +904,18 @@ def create_job(request: JobCreateRequest, db: Session = Depends(get_db)) -> Dict
             raise HTTPException(status_code=500, detail="Falha ao enviar job para fila.")
 
         # 2. Registrar no banco de dados SQLite
+        # Webhook (R8): attach the URL + secret if provided. We don't
+        # validate the URL scheme here — invalid URLs just cause the
+        # webhook delivery to fail and land in the dead-letter table.
+        # Tenant id is resolved from the request scope (TenantMiddleware
+        # has already validated the key and stored the resolved tenant
+        # on request.state.tenant).
+        tenant_id = None
+        if http_request is not None:
+            tenant = getattr(http_request.state, "tenant", None)
+            if tenant is not None:
+                tenant_id = tenant.id
+
         db_job = JobModel(
             id=job_id,
             status="queued",
@@ -909,7 +928,10 @@ def create_job(request: JobCreateRequest, db: Session = Depends(get_db)) -> Dict
             face_mask_blur=request.face_mask_blur,
             detection_threshold=request.detection_threshold,
             smoothing=request.smoothing,
-            processors=json.dumps(request.processors)
+            processors=json.dumps(request.processors),
+            webhook_url=request.webhook_url,
+            webhook_secret=request.webhook_secret,
+            tenant_id=tenant_id,
         )
         db.add(db_job)
         db.commit()

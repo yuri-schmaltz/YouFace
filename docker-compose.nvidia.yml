@@ -1,0 +1,31 @@
+version: '3.8'
+
+# GPU profile — NVIDIA CUDA via nvidia-docker runtime.
+# Use: docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up
+#
+# Requires:
+#   - nvidia-container-toolkit installed on the host
+#   - NVIDIA driver >= 525 (for CUDA 12.x)
+#   - At least one CUDA-capable GPU
+#
+# Verify with: docker run --rm --gpus all nvidia/cuda:12.3.0-base-ubuntu22.04 nvidia-smi
+
+services:
+  backend:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+      # Tell facefusion to use the CUDA onnxruntime
+      - FACEFUSION_EXECUTION_PROVIDERS=cuda
+
+  frontend:
+    # Frontend has no GPU dependency — pass through.
+    environment:
+      - NEXT_PUBLIC_API_URL=http://localhost:8000
