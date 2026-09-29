@@ -3,6 +3,7 @@ import shutil
 import uuid
 import json
 import datetime
+import time
 import sys
 from typing import List, Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, UploadFile, File, BackgroundTasks, Depends, Request
@@ -21,6 +22,13 @@ from facefusion.core import process_step
 from facefusion.api.database import get_db, JobModel, SessionLocal
 
 router = APIRouter()
+
+# Server start time for uptime reporting on /api/health
+_START_TIME = time.time()
+
+
+def _get_uptime_s() -> float:
+    return round(time.time() - _START_TIME, 1)
 
 # R2: sub-router mounting happens in facefusion/api/routes/__init__.py
 # to keep a single source of truth (avoids FastAPI duplicate-path errors
@@ -144,6 +152,31 @@ class JobCreateRequest(BaseModel):
     face_occluder_model: Optional[str] = None
     face_parser_model: Optional[str] = None
     mappings: Optional[List[FaceMapping]] = None
+
+
+@router.get("/health")
+def get_health() -> Dict[str, Any]:
+    """
+    Liveness probe simples. Retorna status + timestamp.
+    Usado pelo cockpit para mostrar "Engine: Online".
+    """
+    return {
+        "status": "ok",
+        "version": "3.9.1-my.1",
+        "uptime_s": _get_uptime_s(),
+    }
+
+
+@router.get("/version")
+def get_version() -> Dict[str, Any]:
+    """
+    Versão do servidor YouFace.
+    """
+    return {
+        "name": "YouFace",
+        "version": "3.9.1-my.1",
+        "facefusion_version": "3.7.0",
+    }
 
 
 @router.get("/hardware/providers")

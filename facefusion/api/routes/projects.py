@@ -20,6 +20,7 @@ import platform
 from typing import Any, Dict, List, Optional
 
 from fastapi import APIRouter, HTTPException, Depends
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 

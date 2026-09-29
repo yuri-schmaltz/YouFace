@@ -35,7 +35,7 @@ class RateLimiter(BaseHTTPMiddleware):
     per-worker (acceptable for single-user local use).
     """
 
-    def __init__(self, app: ASGIApp, requests_per_window: int = 60, window_seconds: int = 60):
+    def __init__(self, app: ASGIApp, requests_per_window: int = 600, window_seconds: int = 60):
         super().__init__(app)
         self.requests_per_window = requests_per_window
         self.window_seconds = window_seconds
@@ -48,6 +48,12 @@ class RateLimiter(BaseHTTPMiddleware):
             return await call_next(request)
 
         client_ip = request.client.host if request.client else "unknown"
+
+        # Localhost (cockpit UI) is exempt — this is a single-user local-first
+        # tool; rate-limiting ourselves makes the UI flicker between 429s and
+        # data. Real abuse (external network) still hits the 600 req/min cap.
+        if client_ip in ("127.0.0.1", "::1", "localhost"):
+            return await call_next(request)
         now = time.time()
         window_start = now - self.window_seconds
 
@@ -96,13 +102,24 @@ class SecurityHeaders(BaseHTTPMiddleware):
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Referrer-Policy"] = "no-referrer"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
-        # CSP for the API itself (not the SPA — Next.js sets its own when served)
+        # CSP: precisa servir o cockpit estático do Next.js (que tem seus
+        # próprios chunks CSS/JS em /_next/static) E a API. 'self' cobre
+        # ambos. 'unsafe-inline' para style é necessário por causa do
+        # Next.js (style tags inline no HTML). 'unsafe-inline' para
+        # scripts é o trade-off padrão para SPA — o app é local-only.
         response.headers["Content-Security-Policy"] = (
-            f"default-src 'none'; "
+            f"default-src 'self'; "
             f"connect-src {self.csp_connect_src}; "
-            f"img-src 'self' data:; "
-            f"style-src 'unsafe-inline'; "
-            f"frame-ancestors 'none'"
+            f"img-src 'self' data: blob:; "
+            f"style-src 'self' 'unsafe-inline'; "
+            f"style-src-elem 'self' 'unsafe-inline'; "
+            f"script-src 'self' 'unsafe-inline' 'unsafe-eval'; "
+            f"script-src-elem 'self' 'unsafe-inline' 'unsafe-eval'; "
+            f"font-src 'self' data:; "
+            f"frame-ancestors 'none'; "
+            f"media-src 'self' blob:; "
+            f"worker-src 'self' blob:; "
+            f"connect-src 'self' {self.csp_connect_src}"
         )
         return response
 
