@@ -11,7 +11,7 @@ export interface UseComparatorActionsOptions {
   apiUrl: string;
   showToast: (type: "success" | "error" | "info", title: string, message?: string) => void;
   setPreviewOutputUrl: (url: string | null) => void;
-  setActiveTab: (tab: string) => void;
+  setActiveTab: React.Dispatch<React.SetStateAction<"projects" | "create_new" | "jobs" | "settings">>;
 }
 
 export interface UseComparatorActionsReturn {

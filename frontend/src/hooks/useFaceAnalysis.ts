@@ -79,7 +79,7 @@ export function useFaceAnalysis(options: UseFaceAnalysisOptions): UseFaceAnalysi
       showToast("info", "Sem Vídeo", "Carregue um vídeo de destino para diagnosticar.");
       return;
     }
-    studio.set("isDiagnosing", true);
+    // isDiagnosing is managed by the wizard hook in page.tsx
     try {
       const url = formatApiUrl(apiUrl, "/api/video/diagnose");
       const res = await fetch(url, {
@@ -89,7 +89,6 @@ export function useFaceAnalysis(options: UseFaceAnalysisOptions): UseFaceAnalysi
       });
       if (!res.ok) throw new Error("Falha ao diagnosticar vídeo.");
       const data: VideoDiagnosticReport = await res.json();
-      studio.set("diagnosticReport", data);
       showToast(
         "success",
         "Diagnóstico Concluído",
@@ -99,7 +98,7 @@ export function useFaceAnalysis(options: UseFaceAnalysisOptions): UseFaceAnalysi
       const message = err instanceof Error ? err.message : String(err);
       showToast("error", "Erro no Diagnóstico", message || "Não foi possível analisar o vídeo.");
     } finally {
-      studio.set("isDiagnosing", false);
+      // isDiagnosing is managed by the wizard hook in page.tsx
     }
   }, [apiUrl, studio, showToast]);
 

@@ -5,6 +5,7 @@ Provides:
 - Simple in-memory rate limiting (per-IP, sliding window) — no external dep
 - Security headers (CSP, X-Frame-Options, etc.) — no external dep
 - Request size cap (defense against accidental huge uploads)
+- Multi-tenant identification + per-tenant quota headers (X-RateLimit-*)
 
 Why custom (not slowapi/starlette-csp):
 - The facefusion API is local-first; we don't need Redis-backed
@@ -14,7 +15,7 @@ Why custom (not slowapi/starlette-csp):
 """
 import time
 import collections
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Optional
 from fastapi import Request
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -128,3 +129,92 @@ class MaxBodySize(BaseHTTPMiddleware):
                 content={"detail": f"Request too large ({int(cl)} bytes > {self.max_bytes} max)."},
             )
         return await call_next(request)
+
+
+# ---------------------------------------------------------------------------
+# Multi-tenant identification + quota headers
+# ---------------------------------------------------------------------------
+
+class TenantMiddleware(BaseHTTPMiddleware):
+    """
+    Identifies the calling tenant (if any) via X-API-Key or Bearer header,
+    attaches the resolved tenant to `request.state.tenant`, and decorates
+    responses with X-RateLimit-* headers reflecting the current month usage.
+
+    This middleware does NOT enforce the quota by itself — that would block
+    small admin queries once a tenant is exhausted. Instead, the
+    `/api/admin/usage` and `/api/admin/tenants` endpoints (and the
+    job-create endpoint for write paths) check quota before charging work.
+
+    Identification order:
+        1. X-API-Key header (preferred for tenant auth)
+        2. Authorization: Bearer <key>
+    If neither is present, request.state.tenant is None (anonymous /
+    local-mode user).
+    """
+
+    def __init__(self, app: ASGIApp):
+        super().__init__(app)
+
+    async def dispatch(self, request: Request, call_next):
+        raw_key = self._extract_key(request)
+        tenant = None
+        if raw_key:
+            try:
+                # Lazy import to avoid pulling the tenants module at startup
+                # before ensure_tenant_tables() runs.
+                from facefusion.api.tenants import get_tenant_by_key
+                tenant = get_tenant_by_key(raw_key)
+            except Exception:
+                tenant = None
+        request.state.tenant = tenant
+
+        response = await call_next(request)
+
+        # Always advertise the resolved tenant id (or "anonymous").
+        if tenant is not None:
+            response.headers["X-Tenant-Id"] = tenant.id
+            response.headers["X-Tenant-Name"] = tenant.name
+
+            # Always decorate with quota headers so clients can introspect
+            # their state on every response. Quota == -1 (UNLIMITED) is
+            # surfaced as "unlimited" instead of a numeric.
+            try:
+                from facefusion.api.tenants import (
+                    get_usage_minutes,
+                    remaining_quota_minutes,
+                    _current_period,
+                    UNLIMITED_QUOTA,
+                )
+                used = get_usage_minutes(tenant.id)
+                remaining = remaining_quota_minutes(tenant)
+                response.headers["X-RateLimit-Limit"] = (
+                    "unlimited" if tenant.monthly_quota_minutes == UNLIMITED_QUOTA
+                    else str(tenant.monthly_quota_minutes)
+                )
+                response.headers["X-RateLimit-Used"] = f"{used:.2f}"
+                response.headers["X-RateLimit-Remaining"] = (
+                    "unlimited" if remaining is None else f"{remaining:.2f}"
+                )
+                response.headers["X-RateLimit-Period"] = _current_period()
+            except Exception:
+                pass
+
+        return response
+
+    @staticmethod
+    def _extract_key(request: Request) -> Optional[str]:
+        x_api_key = request.headers.get("x-api-key")
+        if x_api_key:
+            return x_api_key.strip()
+        auth = request.headers.get("authorization")
+        if auth and auth.lower().startswith("bearer "):
+            presented = auth[7:].strip()
+            # Only treat as tenant key if it looks like one (not the legacy
+            # FACEFUSION_API_TOKEN). Heuristic: tenant keys start with
+            # 'fftk_' (set on rotation) OR are token_urlsafe(32) (no prefix).
+            # The legacy admin token typically is user-chosen; we therefore
+            # DON'T sniff the prefix — the tenants table is keyed by hash,
+            # so a stale FACEFUSION_API_TOKEN simply won't match any row.
+            return presented or None
+        return None

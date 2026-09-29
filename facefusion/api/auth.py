@@ -60,12 +60,27 @@ def get_configured_token() -> Optional[str]:
 
 
 def is_public_path(path: str) -> bool:
-    """Check whether a path is in the public whitelist."""
+    """Check whether a path is in the public whitelist.
+
+    Accepts both prefixed (`/api/config`) and unprefixed (`/config`)
+    forms so the same logic works regardless of which mount prefix the
+    router uses (the app mounts `/api` and `/api/v1`).
+    """
     if path in PUBLIC_PATHS:
         return True
-    for prefix in ("/hardware/", "/media/output/", "/media/upload/"):
-        if path.startswith(prefix):
+    for suffix in ("/config", "/processors/list"):
+        if path == suffix or path.endswith(suffix):
             return True
+    for prefix in ("/hardware/", "/media/output/", "/media/upload/"):
+        if path.startswith(prefix) or path.startswith("/api" + prefix):
+            return True
+    # SSE/job-stream is long-lived and tied to a job_id that's already
+    # authenticated by the worker — gating it with bearer would force
+    # EventSource clients to send a header, which they can't.
+    if "/jobs/stream" in path:
+        return True
+    if path in ("/", "/api", "/api/v1"):
+        return True
     return False
 
 
@@ -92,12 +107,19 @@ class BearerAuthMiddleware(BaseHTTPMiddleware):
 
     def __init__(self, app: ASGIApp, token: Optional[str] = None):
         super().__init__(app)
-        # If explicit token is None, pull from env. If still None, auth disabled.
-        self.token = token if token is not None else get_configured_token()
+        # If explicit token is None, fall back to env at dispatch time
+        # (see below). We deliberately don't cache self.token at __init__
+        # so tests can flip FACEFUSION_API_TOKEN via os.environ patches
+        # between requests without recreating the app.
+        self._explicit_token = token
+
+    def _active_token(self) -> Optional[str]:
+        return self._explicit_token if self._explicit_token is not None else get_configured_token()
 
     async def dispatch(self, request: Request, call_next):
+        active_token = self._active_token()
         # Auth disabled (local-only mode)
-        if not self.token:
+        if not active_token:
             return await call_next(request)
 
         # Always allow OPTIONS (CORS preflight)
@@ -110,7 +132,7 @@ class BearerAuthMiddleware(BaseHTTPMiddleware):
 
         # Verify Authorization header
         auth_header = request.headers.get("authorization")
-        if not verify_bearer(auth_header, self.token):
+        if not verify_bearer(auth_header, active_token):
             return JSONResponse(
                 status_code=401,
                 content={"detail": "Missing or invalid Authorization header. Set 'Authorization: Bearer <token>'."},

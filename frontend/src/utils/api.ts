@@ -16,7 +16,7 @@ export function getInitialApiUrl(): string {
 
 export async function resolveApiUrl(): Promise<string> {
   if (cachedApiUrl !== null) {
-    return cachedApiUrl;
+    return cachedApiUrl || "http://127.0.0.1:8000";
   }
 
   if (typeof window === "undefined") {
@@ -44,7 +44,7 @@ export async function resolveApiUrl(): Promise<string> {
           // fallback to data.apiUrl
         }
         cachedApiUrl = data.apiUrl;
-        return cachedApiUrl;
+        return cachedApiUrl || "http://127.0.0.1:8000";
       }
     }
   } catch {

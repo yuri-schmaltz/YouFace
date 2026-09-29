@@ -56,6 +56,14 @@ def init_db():
             conn.execute(text("ALTER TABLE jobs ADD COLUMN project_name TEXT"))
     except Exception:
         pass
+    # Multi-tenant support (R7 of gauntlet): create tenants + tenant_usage
+    # tables on first boot. Idempotent and best-effort — see
+    # facefusion/api/tenants.py for the design.
+    try:
+        from facefusion.api.tenants import ensure_tenant_tables
+        ensure_tenant_tables()
+    except Exception:
+        pass
 
 
 def get_db():

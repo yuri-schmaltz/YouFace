@@ -74,7 +74,7 @@ def create_app() -> FastAPI:
     )
 
     # Middleware custom: rate limiting, security headers, body size cap
-    from facefusion.api.middleware import RateLimiter, SecurityHeaders, MaxBodySize
+    from facefusion.api.middleware import RateLimiter, SecurityHeaders, MaxBodySize, TenantMiddleware
     # Ordem importa: MaxBodySize primeiro (rejeita cedo), depois SecurityHeaders,
     # depois RateLimiter. Middlewares são executados em ordem reversa ao redor
     # da request, então esta ordem resulta em: rate limit check first, then
@@ -82,6 +82,11 @@ def create_app() -> FastAPI:
     app.add_middleware(MaxBodySize, max_bytes=200 * 1024 * 1024)
     app.add_middleware(SecurityHeaders)
     app.add_middleware(RateLimiter, requests_per_window=60, window_seconds=60)
+    # Tenant identification runs LAST (outermost) so it sees the final
+    # response and can decorate it with X-RateLimit-* headers. It does not
+    # reject any request by itself — quota enforcement is explicit at the
+    # endpoint that costs minutes (job create, train start).
+    app.add_middleware(TenantMiddleware)
 
     # Bearer auth gate. Disabled unless FACEFUSION_API_TOKEN env var is set.
     # See facefusion/api/auth.py for the full design.

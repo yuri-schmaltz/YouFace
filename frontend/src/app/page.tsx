@@ -937,7 +937,7 @@ export default function Home() {
                   <div className="flex-1 min-h-[220px] overflow-hidden">
                     <VideoComparator
                       previewOutputUrl={previewOutputUrl}
-                      onDownloadOutput={handleDownloadOutput}
+                      onDownloadOutput={() => handleDownloadOutput(previewOutputUrl)}
                     />
                   </div>
 
@@ -1140,7 +1140,7 @@ export default function Home() {
         onClose={() => setSelectedFaceForModal(null)}
         sourceItems={sourceItems}
         faceMappings={faceMappings}
-        onSelectMapping={(faceIdx: number, sourcePath: string | null) => {
+        onSelectMapping={(faceIdx: number, sourcePath?: string) => {
           setFaceMappings(prev => {
             const next = { ...prev };
             if (sourcePath) {

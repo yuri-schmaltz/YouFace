@@ -36,6 +36,7 @@ from facefusion.api.routes import projects as _projects  # noqa: E402
 from facefusion.api.routes import hardware as _hardware  # noqa: E402
 from facefusion.api.routes import config as _config  # noqa: E402
 from facefusion.api.routes import common as _common  # noqa: E402
+from facefusion.api.routes import tenants as _tenants  # noqa: E402
 
 
 # Include sub-routers from migrated submodules into the main `router`.
@@ -44,6 +45,7 @@ from facefusion.api.routes import common as _common  # noqa: E402
 router.include_router(_projects.router)
 router.include_router(_hardware.router)
 router.include_router(_config.router)
+router.include_router(_tenants.router)
 
 
 __all__ = [

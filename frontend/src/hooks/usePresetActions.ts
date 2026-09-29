@@ -1,23 +1,14 @@
 import { useCallback } from "react";
+import type { Preset } from "../types";
+
+// Re-export so callers can still do `import type { Preset } from ".../usePresetActions"`.
+export type { Preset } from "../types";
 
 /**
  * Preset actions hook. Handles the apply/save preset handlers that
  * were previously inline in page.tsx. Setters come from page-local
  * state to keep the hook side-effect-free.
  */
-export interface Preset {
-  name: string;
-  faceSwapperWeight: number;
-  faceMaskBlur: number;
-  detectionThreshold: number;
-  smoothing: number;
-  faceSwapperModel: string;
-  faceSwapperPixelBoost: number;
-  faceEnhancerModel?: string;
-  faceEnhancerBlend?: number;
-  frameEnhancerModel?: string;
-  frameEnhancerBlend?: number;
-}
 
 export interface PresetSetters {
   setSelectedPresetName: (name: string) => void;
@@ -35,7 +26,7 @@ export interface PresetSetters {
 
 export interface UsePresetActionsOptions {
   presets: Preset[];
-  saveCustomPreset: (data: Record<string, unknown>, name: string) => boolean;
+  saveCustomPreset: (data: Omit<Preset, "name" | "isCustom">, name: string) => boolean;
   newPresetName: string;
   showToast: (type: "success" | "error" | "info" | "warning", title: string, message?: string) => void;
   setters: PresetSetters;
@@ -46,7 +37,7 @@ export interface UsePresetActionsOptions {
     detectionThreshold: number;
     smoothing: number;
     faceSwapperModel: string;
-    faceSwapperPixelBoost: number;
+    faceSwapperPixelBoost: string;
     faceEnhancerModel: string;
     faceEnhancerBlend: number;
     faceEnhancerWeight: number;

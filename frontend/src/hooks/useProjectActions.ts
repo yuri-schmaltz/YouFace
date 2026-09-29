@@ -38,7 +38,7 @@ export interface StudioSetters {
   setTargetMediaFullPath: (p: string | null) => void;
   setTargetMediaName: (n: string) => void;
   setPreviewOutputUrl: (u: string | null) => void;
-  setActiveTab: (tab: string) => void;
+  setActiveTab: React.Dispatch<React.SetStateAction<"projects" | "create_new" | "jobs" | "settings">>;
 }
 
 export interface UseProjectActionsOptions {
