@@ -1,15 +1,15 @@
-# FaceFusion — Decoupled Fork
+# YouFace — Decoupled Fork
 
 > **Industry-leading face manipulation platform** — re-architected as a fully
 > decoupled client/server stack: a **Next.js 16** web cockpit talking to a
-> **FastAPI** backend that drives the original FaceFusion engine.
+> **FastAPI** backend that drives the original YouFace engine.
 
-This repository is a **fork of [`facefusion/facefusion`](https://github.com/facefusion/facefusion)**
+This repository is a **fork of [`youface/youface`](https://github.com/youface/youface)**
 starting from upstream `3.6.1`. It re-shapes the user experience around a
 modern web UI while keeping the upstream Python engine intact underneath.
 
 For the upstream project's general documentation, see
-<https://docs.facefusion.io>. Everything below documents **what this fork
+<https://docs.youface.io>. Everything below documents **what this fork
 adds and changes**.
 
 ---
@@ -41,23 +41,23 @@ Features in the cockpit:
   [`docs/goal/design.md`](docs/goal/design.md) for the full token set.
 
 ### 2. FastAPI backend layer
-A new `facefusion/api/` package wraps the engine:
+A new `youface/api/` package wraps the engine:
 
 | Module | Purpose |
 |---|---|
-| `facefusion/api/main.py` | FastAPI app factory, lifespan hooks, dynamic port discovery, mounts the static frontend build |
-| `facefusion/api/database.py` | SQLAlchemy models + SQLite bootstrap (the `jobs` table) |
-| `facefusion/api/routes.py` | REST endpoints: hardware, processors, config, media upload, jobs, diagnostic export |
-| `facefusion/api/worker.py` | Background thread that consumes `queued` jobs, runs them through the engine and writes back status/progress |
+| `youface/api/main.py` | FastAPI app factory, lifespan hooks, dynamic port discovery, mounts the static frontend build |
+| `youface/api/database.py` | SQLAlchemy models + SQLite bootstrap (the `jobs` table) |
+| `youface/api/routes.py` | REST endpoints: hardware, processors, config, media upload, jobs, diagnostic export |
+| `youface/api/worker.py` | Background thread that consumes `queued` jobs, runs them through the engine and writes back status/progress |
 
 ### 3. Workflows module
-`facefusion/workflows/` introduces an explicit, typed pipeline abstraction:
+`youface/workflows/` introduces an explicit, typed pipeline abstraction:
 
 - `core.py` — shared step contract, translation handling, state machine
 - `image_to_image.py` — image → image swap pipeline
 - `image_to_video.py` — image → video swap pipeline with per-frame progress
 
-The CLI entrypoint (`python facefusion.py …`) and the API worker both delegate
+The CLI entrypoint (`python youface.py …`) and the API worker both delegate
 to these workflows, so behavior is identical between modes.
 
 ### 4. Reliability & quality-of-life
@@ -89,7 +89,7 @@ to these workflows, so behavior is identical between modes.
   UI state), 1.265 lines, and a single typed state object per concern.
 
 ### 5. Housekeeping
-- `facefusion/__init__.py` declares `version = "3.9.0-my.1"` and fork metadata.
+- `youface/__init__.py` declares `version = "3.9.0-my.1"` and fork metadata.
 - `.gitignore` hardened against test-scaffolding leaks (`.new_jobs_path_test/`,
   `out/`, `tmp/`, `frontend/.next/`, `frontend/out/`, `frontend/node_modules/`,
   local `*.ini` overrides, OS/editor noise).
@@ -147,9 +147,9 @@ when the upstream installer fails silently.
 ### CLI (legacy)
 The original CLI is still available and fully supported:
 ```bash
-python facefusion.py run [options]
-python facefusion.py job-list
-python facefusion.py job-create …    # see `python facefusion.py --help` for the full subcommand list
+python youface.py run [options]
+python youface.py job-list
+python youface.py job-create …    # see `python youface.py --help` for the full subcommand list
 ```
 
 ### Docker
@@ -172,14 +172,14 @@ Two configurations are available:
 ### Authentication (LAN deploy)
 
 The API binds to `127.0.0.1` by default (no auth). For LAN exposure,
-set `FACEFUSION_API_TOKEN` and the server activates bearer-token auth:
+set `YOUFACE_API_TOKEN` and the server activates bearer-token auth:
 
 ```bash
 # Generate a strong token
 python -c "import secrets; print(secrets.token_urlsafe(32))"
 
 # Start with auth enabled
-FACEFUSION_API_TOKEN=<your-token> python run_api.py
+YOUFACE_API_TOKEN=<your-token> python run_api.py
 ```
 
 The client must send `Authorization: Bearer <token>` on every non-GET
@@ -187,7 +187,7 @@ request. GETs on `/api/hardware/*`, `/api/processors/list`, `/api/config`,
 `/api/media/output/*`, and `/api/jobs/stream` remain public (so the
 status bar can poll without auth).
 
-The frontend reads the token from `localStorage` (key: `FACEFUSION_TOKEN`)
+The frontend reads the token from `localStorage` (key: `YOUFACE_TOKEN`)
 on first load — set it via the browser devtools if you're using LAN mode.
 
 > **Security note:** This is a shared-secret scheme, not real auth. For
@@ -200,8 +200,8 @@ on first load — set it via the browser devtools if you're using LAN mode.
 ## 📂 Repository layout
 
 ```
-my-facefusion/
-├── facefusion/                  # Python engine + fork additions
+my-youface/
+├── youface/                  # Python engine + fork additions
 │   ├── api/                     # 🆕 FastAPI layer (database, routes, worker, main)
 │   ├── workflows/               # 🆕 Typed pipelines (core, image→image, image→video)
 │   ├── jobs/                    # Refactored job subsystem (runner, store, manager, list, helper)
@@ -219,7 +219,7 @@ my-facefusion/
 │       ├── prd.md               # Product requirements
 │       ├── design.md            # Design system tokens
 │       └── product-roadmap.md   # Phased execution plan
-├── facefusion.py                # CLI entrypoint
+├── youface.py                # CLI entrypoint
 ├── run_api.py                   # 🆕 API + UI entrypoint
 ├── CHANGELOG.md                 # 🆕 Fork-specific changelog
 └── README.md                    # this file
@@ -241,16 +241,16 @@ This fork is based on upstream `3.6.1` (commit `5b7d145`). It currently sits
 
 **Merge strategy** (recommended):
 
-1. Add `facefusion/facefusion` as a new remote:
+1. Add `youface/youface` as a new remote:
    ```bash
-   git remote add upstream https://github.com/facefusion/facefusion.git
+   git remote add upstream https://github.com/youface/youface.git
    git fetch upstream
    ```
 2. Create a dedicated `merge/upstream-3.7.0` branch from `master` and
    merge `upstream/3.7.0` into it.
 3. Resolve conflicts. Most conflicts are expected in
-   `facefusion/uis/`, `facefusion/jobs.py` (we refactored into
-   `facefusion/jobs/`), and `facefusion/choices.py` (we added processor
+   `youface/uis/`, `youface/jobs.py` (we refactored into
+   `youface/jobs/`), and `youface/choices.py` (we added processor
    pre-check validation).
 4. Re-run the API and the frontend smoke tests (see `tests/`).
 5. Tag the result as `3.7.0-my.2` and update `CHANGELOG.md`.
@@ -277,13 +277,13 @@ export test (`test_diagnostic_export.py` in `tests/`).
 
 Inherited from upstream: **Open RAI License (OpenRAIL-AS)**. See
 [`LICENSE.md`](LICENSE.md) for the full text. The fork additions in
-`facefusion/api/`, `facefusion/workflows/`, `frontend/` and the docs in
+`youface/api/`, `youface/workflows/`, `frontend/` and the docs in
 `docs/goal/` are released under the same terms.
 
 ---
 
 ## 🙏 Credits
 
-- **Upstream maintainers** of [facefusion/facefusion](https://github.com/facefusion/facefusion)
+- **Upstream maintainers** of [youface/youface](https://github.com/youface/youface)
   for the original engine.
 - Fork maintained by [@yuri-schmaltz](https://github.com/yuri-schmaltz).

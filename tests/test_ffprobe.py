@@ -1,9 +1,9 @@
 
 import pytest
 
-from facefusion import ffmpeg, ffmpeg_builder, process_manager
-from facefusion.download import conditional_download
-from facefusion.ffprobe import extract_audio_metadata, extract_video_metadata
+from youface import ffmpeg, ffmpeg_builder, process_manager
+from youface.download import conditional_download
+from youface.ffprobe import extract_audio_metadata, extract_video_metadata
 from .helper import get_test_example_file, get_test_examples_directory
 
 

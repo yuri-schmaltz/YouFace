@@ -37,7 +37,7 @@ the FastAPI/CLI split.
 ### Headline changes from this fork (vs upstream 3.8.3)
 
 1. **Decoupled Next.js 16 web cockpit** in `frontend/`
-2. **FastAPI backend** in `facefusion/api/`
+2. **FastAPI backend** in `youface/api/`
 3. **Multi-source face selection** with granular target-face mapping
 4. **Real-time job progress** (SSE + polling fallback)
 5. **Single-frame preview** (auto + manual)
@@ -58,8 +58,8 @@ For the per-commit breakdown see [`CHANGELOG.md`](CHANGELOG.md).
 
 ### Fresh install
 ```bash
-git clone https://github.com/yuri-schmaltz/my-facefusion.git
-cd my-facefusion
+git clone https://github.com/yuri-schmaltz/my-youface.git
+cd my-youface
 git checkout 3.8.3-my.1
 python install.py default --skip-conda
 cd frontend && npm install && npm run build && cd ..
@@ -75,7 +75,7 @@ cd frontend && npm install && npm run build && cd ..
 ```
 
 > If you were running the legacy CLI only, no frontend rebuild is required —
-> `python facefusion.py …` still works exactly as before.
+> `python youface.py …` still works exactly as before.
 
 ### Upgrading the dependencies
 `requirements.txt` is now a documented mirror of `pyproject.toml` and honors
@@ -108,5 +108,5 @@ python install.py rocm             # ROCm: 1.22.2.post3 (Linux only)
 
 ## Credits
 
-- Upstream engine: [facefusion/facefusion](https://github.com/facefusion/facefusion) @ `3.8.3` (`435521d`)
+- Upstream engine: [youface/youface](https://github.com/youface/youface) @ `3.8.3` (`435521d`)
 - Fork maintainer: [@yuri-schmaltz](https://github.com/yuri-schmaltz)

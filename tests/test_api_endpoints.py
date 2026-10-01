@@ -8,8 +8,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from facefusion.api.main import app
-from facefusion.api.database import Base, get_db, JobModel
+from youface.api.main import app
+from youface.api.database import Base, get_db, JobModel
 
 # Configurar banco de dados SQLite temporário em memória para os testes
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -48,7 +48,7 @@ def test_read_root() -> None:
     response = client.get("/")
     assert response.status_code == 200
     data = response.json()
-    assert data["app"] == "FaceFusion API"
+    assert data["app"] == "YouFace API"
     assert "version" in data
     assert data["status"] == "online"
 
@@ -71,7 +71,7 @@ def test_get_hardware_devices() -> None:
 
 
 def test_get_available_processors() -> None:
-    """Verifica se o endpoint de processadores lista os módulos nativos do FaceFusion."""
+    """Verifica se o endpoint de processadores lista os módulos nativos do YouFace."""
     response = client.get("/api/processors/list")
     assert response.status_code == 200
     processors = response.json()
@@ -172,7 +172,7 @@ def test_create_list_and_query_jobs() -> None:
 
 def test_get_hardware_providers_error() -> None:
     """Verifica se erro ao buscar provedores de hardware retorna 500."""
-    with patch("facefusion.api.routes.get_available_execution_providers") as mock_get:
+    with patch("youface.api._legacy_routes.get_available_execution_providers") as mock_get:
         mock_get.side_effect = Exception("Hardware detection failed")
         response = client.get("/api/hardware/providers")
         assert response.status_code == 500
@@ -181,7 +181,7 @@ def test_get_hardware_providers_error() -> None:
 
 def test_get_hardware_devices_error() -> None:
     """Verifica se erro ao detectar dispositivos de hardware retorna 500."""
-    with patch("facefusion.api.routes.detect_static_execution_devices") as mock_detect:
+    with patch("youface.api._legacy_routes.detect_static_execution_devices") as mock_detect:
         mock_detect.side_effect = Exception("NVIDIA SMI failure")
         response = client.get("/api/hardware/devices")
         assert response.status_code == 500
@@ -190,7 +190,7 @@ def test_get_hardware_devices_error() -> None:
 
 def test_get_available_processors_error() -> None:
     """Verifica se erro ao varrer processadores retorna 500."""
-    with patch("facefusion.api.routes.resolve_file_paths") as mock_resolve:
+    with patch("youface.api._legacy_routes.resolve_file_paths") as mock_resolve:
         mock_resolve.side_effect = Exception("Filesystem error")
         response = client.get("/api/processors/list")
         assert response.status_code == 500
@@ -199,7 +199,7 @@ def test_get_available_processors_error() -> None:
 
 def test_get_current_config_error() -> None:
     """Verifica se erro ao ler a configuração global do estado retorna 500."""
-    with patch("facefusion.state_manager.get_item") as mock_get:
+    with patch("youface.state_manager.get_item") as mock_get:
         mock_get.side_effect = Exception("State manager uninitialized")
         response = client.get("/api/config")
         assert response.status_code == 500
@@ -308,7 +308,7 @@ def test_delete_job_endpoint() -> None:
     db.close()
 
     # 3. Chamar a rota de exclusão com patches para evitar erros na exclusão de arquivo físico
-    with patch("facefusion.jobs.job_manager.delete_job", return_value=True):
+    with patch("youface.jobs.job_manager.delete_job", return_value=True):
         response_delete = client.delete("/api/jobs/job-delete-test-id")
         assert response_delete.status_code == 200
         assert response_delete.json()["status"] == "success"

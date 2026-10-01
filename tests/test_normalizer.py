@@ -1,4 +1,4 @@
-from facefusion.normalizer import normalize_color, normalize_fps, normalize_space
+from youface.normalizer import normalize_color, normalize_fps, normalize_space
 
 
 def test_normalize_color() -> None:

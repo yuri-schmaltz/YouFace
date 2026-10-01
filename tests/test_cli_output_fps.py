@@ -4,11 +4,11 @@ import sys
 import numpy
 import pytest
 
-from facefusion import ffmpeg, ffmpeg_builder, process_manager
-from facefusion.download import conditional_download
-from facefusion.jobs.job_manager import clear_jobs, init_jobs
-from facefusion.types import Fps, WorkflowStrategy
-from facefusion.vision import count_video_frame_total, detect_video_fps, read_video_frame
+from youface import ffmpeg, ffmpeg_builder, process_manager
+from youface.download import conditional_download
+from youface.jobs.job_manager import clear_jobs, init_jobs
+from youface.types import Fps, WorkflowStrategy
+from youface.vision import count_video_frame_total, detect_video_fps, read_video_frame
 from .helper import get_test_example_file, get_test_examples_directory, get_test_jobs_directory, get_test_output_file, prepare_test_output_directory
 
 
@@ -55,8 +55,8 @@ def before_each() -> None:
 def test_output_video_fps(workflow_strategy : WorkflowStrategy, output_video_fps : Fps, trim_frame_end : int, output_video_frame_total : int) -> None:
 	actual_file_path = get_test_output_file('test-output-video-fps-actual-' + workflow_strategy + '-' + str(output_video_fps) + '.mp4')
 	expect_file_path = get_test_output_file('test-output-video-fps-expect-' + workflow_strategy + '-' + str(output_video_fps) + '.mp4')
-	actual_commands = [ sys.executable, 'facefusion.py', 'headless-run', '--jobs-path', get_test_jobs_directory(), '--workflow-strategy', workflow_strategy, '-s', get_test_example_file('source.jpg'), '-t', get_test_example_file('target-240p.mp4'), '-o', actual_file_path, '--trim-frame-end', str(trim_frame_end), '--output-video-fps', str(output_video_fps) ]
-	expect_commands = [ sys.executable, 'facefusion.py', 'headless-run', '--jobs-path', get_test_jobs_directory(), '--workflow-strategy', workflow_strategy, '-s', get_test_example_file('source.jpg'), '-t', get_test_example_file('target-240p-30frames-' + str(output_video_fps) + 'fps.mp4'), '-o', expect_file_path ]
+	actual_commands = [ sys.executable, 'youface.py', 'headless-run', '--jobs-path', get_test_jobs_directory(), '--workflow-strategy', workflow_strategy, '-s', get_test_example_file('source.jpg'), '-t', get_test_example_file('target-240p.mp4'), '-o', actual_file_path, '--trim-frame-end', str(trim_frame_end), '--output-video-fps', str(output_video_fps) ]
+	expect_commands = [ sys.executable, 'youface.py', 'headless-run', '--jobs-path', get_test_jobs_directory(), '--workflow-strategy', workflow_strategy, '-s', get_test_example_file('source.jpg'), '-t', get_test_example_file('target-240p-30frames-' + str(output_video_fps) + 'fps.mp4'), '-o', expect_file_path ]
 
 	assert subprocess.run(actual_commands).returncode == 0
 	assert subprocess.run(expect_commands).returncode == 0

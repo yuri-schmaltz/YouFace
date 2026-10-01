@@ -19,7 +19,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from facefusion.api import trainer as trainer_mod
+from youface.api import trainer as trainer_mod
 
 
 # ---------------------------------------------------------------------------
@@ -37,11 +37,11 @@ def isolated_trainer_db(tmp_path):
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    from facefusion.api.database import Base
+    from youface.api.database import Base
     Base.metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     with patch.object(trainer_mod, "SessionLocal", SessionLocal), \
-         patch("facefusion.api.trainer.ensure_train_tables", lambda: None):
+         patch("youface.api.trainer.ensure_train_tables", lambda: None):
         yield
 
 
@@ -71,7 +71,7 @@ def test_run_training_succeeds_on_valid_source(tmp_path):
     job_id = "trn-test-1"
 
     # The autouse fixture already patched SessionLocal + ensured tables.
-    from facefusion.api import database as _db_mod; SessionLocal = trainer_mod.SessionLocal
+    from youface.api import database as _db_mod; SessionLocal = trainer_mod.SessionLocal
     with SessionLocal() as db:
         db.add(trainer_mod.TrainJobModel(
             id=job_id, name="t", source_dir=str(src), output_path=str(out),
@@ -105,7 +105,7 @@ def test_run_training_handles_missing_source_dir(tmp_path):
     out = _output_dir(tmp_path) / "model.npy"
     job_id = "trn-missing"
 
-    from facefusion.api import database as _db_mod; SessionLocal = trainer_mod.SessionLocal
+    from youface.api import database as _db_mod; SessionLocal = trainer_mod.SessionLocal
     with SessionLocal() as db:
         db.add(trainer_mod.TrainJobModel(
             id=job_id, name="t", source_dir="/nonexistent", output_path=str(out),
@@ -127,7 +127,7 @@ def test_run_training_with_empty_source(tmp_path):
     out = _output_dir(tmp_path) / "model.npy"
     job_id = "trn-empty"
 
-    from facefusion.api import database as _db_mod; SessionLocal = trainer_mod.SessionLocal
+    from youface.api import database as _db_mod; SessionLocal = trainer_mod.SessionLocal
     with SessionLocal() as db:
         db.add(trainer_mod.TrainJobModel(
             id=job_id, name="t", source_dir=str(src), output_path=str(out),
@@ -151,7 +151,7 @@ def test_run_training_progress_callback(tmp_path):
     out = _output_dir(tmp_path) / "model.npy"
     job_id = "trn-cb"
 
-    from facefusion.api import database as _db_mod; SessionLocal = trainer_mod.SessionLocal
+    from youface.api import database as _db_mod; SessionLocal = trainer_mod.SessionLocal
     with SessionLocal() as db:
         db.add(trainer_mod.TrainJobModel(
             id=job_id, name="t", source_dir=str(src), output_path=str(out),
@@ -180,7 +180,7 @@ def test_run_training_uses_injected_embedder(tmp_path):
     out = _output_dir(tmp_path) / "model.npy"
     job_id = "trn-injected"
 
-    from facefusion.api import database as _db_mod; SessionLocal = trainer_mod.SessionLocal
+    from youface.api import database as _db_mod; SessionLocal = trainer_mod.SessionLocal
     with SessionLocal() as db:
         db.add(trainer_mod.TrainJobModel(
             id=job_id, name="t", source_dir=str(src), output_path=str(out),
@@ -215,9 +215,9 @@ def train_app(tmp_path):
     ensured tables exist on that engine. We just reuse it."""
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
-    from facefusion.api.routes import train as train_routes
-    from facefusion.api.routes import tenants as tenants_routes
-    from facefusion.api.middleware import TenantMiddleware
+    from youface.api.routes import train as train_routes
+    from youface.api.routes import tenants as tenants_routes
+    from youface.api.middleware import TenantMiddleware
 
     app = FastAPI()
     app.add_middleware(TenantMiddleware)
@@ -233,8 +233,8 @@ def train_app(tmp_path):
     out.mkdir()
 
     # Patch tenants too (since the autouse fixture only patched trainers)
-    from facefusion.api import tenants as tenants_mod
-    from facefusion.api import database as _db_mod; SessionLocal = trainer_mod.SessionLocal
+    from youface.api import tenants as tenants_mod
+    from youface.api import database as _db_mod; SessionLocal = trainer_mod.SessionLocal
     with patch.object(tenants_mod, "SessionLocal", SessionLocal), \
          patch.object(tenants_mod, "ensure_tenant_tables", lambda: None):
         with TestClient(app) as c:
@@ -249,7 +249,7 @@ def test_train_requires_auth(train_app):
 
 def test_train_requires_valid_source_dir(train_app):
     client, src, out = train_app
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         res = client.post(
             "/api/train",
             json={"name": "x", "source_dir": "/no/such/dir"},
@@ -261,7 +261,7 @@ def test_train_requires_valid_source_dir(train_app):
 def test_train_full_lifecycle(train_app):
     """Start training → poll until complete → download .npy."""
     client, src, out = train_app
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         res = client.post(
             "/api/train",
             json={"name": "campaign-hero", "source_dir": src, "output_dir": out},
@@ -299,7 +299,7 @@ def test_train_result_409_until_complete(train_app):
     # We can't easily test the "in-progress" 409 in a unit test because
     # the stub runs in ~1ms; just verify the completed path works and
     # unknown job returns 404.
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         res = client.get(
             "/api/train/does-not-exist/result",
             headers={"Authorization": "Bearer admin"},
@@ -310,7 +310,7 @@ def test_train_result_409_until_complete(train_app):
 def test_train_list_filters_by_tenant(train_app):
     """Two tenants each start a job; each sees only its own."""
     client, src, out = train_app
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         # Create tenants
         a = client.post(
             "/api/admin/tenants",
@@ -360,7 +360,7 @@ def test_train_cancel(train_app):
     that the cancel endpoint returns a non-5xx status either way.
     """
     client, src, out = train_app
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         r = client.post(
             "/api/train",
             json={"name": "cancel-me", "source_dir": src, "output_dir": out},

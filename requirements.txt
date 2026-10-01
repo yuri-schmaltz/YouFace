@@ -1,4 +1,4 @@
-# Source of truth: pyproject.toml (this file) and facefusion/installer.py
+# Source of truth: pyproject.toml (this file) and youface/installer.py
 # (which selects the onnxruntime flavor at install time).
 #
 # install.py reads this file line-by-line and explicitly FILTERS out any

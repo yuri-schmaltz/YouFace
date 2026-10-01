@@ -280,15 +280,15 @@ def test_cli_fix_cuda_alias():
 
 
 def test_cli_upstream_invoked_as_module():
-    """O wrapper deve chamar o upstream via `python -m facefusion.installer`
-    para evitar o sombreamento de facefusion/types.py sobre stdlib types."""
+    """O wrapper deve chamar o upstream via `python -m youface.installer`
+    para evitar o sombreamento de youface/types.py sobre stdlib types."""
     rc, out, err = run_cli("--auto", "--dry-run")
     assert rc == 0
-    # O comando pip preview mostra `pip install` (não `facefusion.installer`),
+    # O comando pip preview mostra `pip install` (não `youface.installer`),
     # mas podemos inspecionar a invocação do upstream checando o import:
     proc = subprocess.run(
         [sys.executable, "-c",
-         "from facefusion.installer import cli; print('ok')"],
+         "from youface.installer import cli; print('ok')"],
         capture_output=True, text=True, cwd=REPO_ROOT, timeout=15,
     )
     assert proc.returncode == 0, f"stderr: {proc.stderr}"

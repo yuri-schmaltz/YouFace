@@ -18,68 +18,32 @@ import sys
 
 
 _ROOT = os.path.dirname(os.path.abspath(__file__))
-_VENV_DIR = os.path.join(_ROOT, ".venv")
+
+# Auto-activate o .venv local antes de qualquer import pesado.
+# A lógica de detecção/relaunch vive em scripts/youface_venv.py para ser
+# compartilhada com outros entry-points (youface.py, ferramentas CLI).
+sys.path.insert(0, os.path.join(_ROOT, "scripts"))
+from youface_venv import maybe_relaunch_in_venv  # noqa: E402
+
+maybe_relaunch_in_venv(_ROOT)
 
 
-def _venv_python() -> str | None:
-    """Return path to the .venv's python executable, or None if absent."""
-    candidates = [
-        os.path.join(_VENV_DIR, "bin", "python"),
-        os.path.join(_VENV_DIR, "bin", "python3"),
-        os.path.join(_VENV_DIR, "Scripts", "python.exe"),  # Windows
-    ]
-    for c in candidates:
-        if os.path.exists(c):
-            return c
-    return None
+# Add the workspace root to sys.path for youface package import
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
 
 
 def _has_required_deps() -> bool:
-    """Checagem rápida: cv2 e facefusion.api.main são importáveis?"""
+    """Checagem rápida: cv2 e youface.api.main são importáveis?"""
     try:
         import cv2  # noqa: F401
     except ImportError:
         return False
     try:
-        from facefusion.api.main import app  # noqa: F401
+        from youface.api.main import app  # noqa: F401
     except ImportError:
         return False
     return True
-
-
-def _maybe_relaunch_in_venv() -> None:
-    """Se estamos fora do .venv local e ele existe, re-executa dentro dele.
-
-    Estratégia: se sys.prefix != sys.base_prefix, já estamos em algum
-    venv (do usuário) e respeitamos. Se sys.prefix == sys.base_prefix
-    (system Python) E existe um .venv local com Python, re-executa
-    dentro dele via os.execv — independente de as deps estarem no
-    system Python. O relaunch deixa o venv decidir se tem deps; se
-    não tiver, vai falhar lá com a mensagem específica do venv.
-    """
-    # Já estamos dentro de algum venv?
-    if sys.prefix != getattr(sys, "base_prefix", sys.prefix):
-        # Dentro do nosso .venv? ok.
-        if os.path.realpath(sys.prefix).startswith(os.path.realpath(_VENV_DIR)):
-            return
-        # Outro venv (ex.: criado pelo usuário). Respeitamos.
-        return
-
-    # Não estamos em venv. Se existe .venv local, re-executa dentro.
-    vpy = _venv_python()
-    if vpy is None:
-        return  # sem venv local — tenta rodar com system Python
-    print(f"[API] relaunching inside .venv: {vpy}", flush=True)
-    os.execv(vpy, [vpy, os.path.abspath(__file__), *sys.argv[1:]])
-
-
-# Auto-activate .venv antes de qualquer import pesado
-_maybe_relaunch_in_venv()
-
-
-# Add the workspace root to sys.path for facefusion package import
-if _ROOT not in sys.path:
-    sys.path.insert(0, _ROOT)
 
 
 # Eagerly probe deps again after potential relaunch — fail fast with a
@@ -94,17 +58,17 @@ if not _has_required_deps():
     sys.exit(1)
 
 
-from facefusion.app_context import set_app_context  # noqa: E402
+from youface.app_context import set_app_context  # noqa: E402
 
 set_app_context("cli")
 
-from facefusion import conda  # noqa: E402
+from youface import conda  # noqa: E402
 
 conda.setup()
 
 import uvicorn  # noqa: E402
 
-from facefusion.api.main import app, find_free_port, write_frontend_config  # noqa: E402
+from youface.api.main import app, find_free_port, write_frontend_config  # noqa: E402
 
 if __name__ == "__main__":
     host = "127.0.0.1"

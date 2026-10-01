@@ -13,7 +13,7 @@ venv
 # Build and release artifacts
 build/
 dist/
-release/facefusion-app
+release/youface-app
 *.zip
 
 # Local development scratch / transient test artefacts
@@ -40,7 +40,7 @@ frontend/coverage/
 Thumbs.db
 
 # Local config overrides (avoid leaking personal paths)
-facefusion.ini.local
+youface.ini.local
 *.local.ini
 
 # Playwright E2E artifacts

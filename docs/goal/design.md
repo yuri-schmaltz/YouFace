@@ -1,8 +1,8 @@
-# FaceFusion Modernizado — Design System
+# YouFace Modernizado — Design System
 
 ## 1. Overview
 
-O sistema de design do **FaceFusion Modernizado** adota uma abordagem **Premium Dark Mode**, focada na clareza técnica, no alto contraste e na estética voltada para criadores de conteúdo e profissionais de inteligência computacional. Inspirado em consoles modernos de desenvolvimento (como Vercel, Linear e interfaces de hardware avançado da NVIDIA), a UI combina fundos escuros profundos, superfícies translúcidas (efeito glassmorphism), divisórias finas e acentos de cor vibrantes (vermelho vivo e verde esmeralda) para sinalizar ação e status.
+O sistema de design do **YouFace Modernizado** adota uma abordagem **Premium Dark Mode**, focada na clareza técnica, no alto contraste e na estética voltada para criadores de conteúdo e profissionais de inteligência computacional. Inspirado em consoles modernos de desenvolvimento (como Vercel, Linear e interfaces de hardware avançado da NVIDIA), a UI combina fundos escuros profundos, superfícies translúcidas (efeito glassmorphism), divisórias finas e acentos de cor vibrantes (vermelho vivo e verde esmeralda) para sinalizar ação e status.
 
 A tipografia limpa baseada no sistema ou na fonte Geist fornece leitura precisa de parâmetros, enquanto sombras discretas de elevação criam uma forte hierarquia tridimensional em telas de dashboard.
 
@@ -20,7 +20,7 @@ As cores são estruturadas em torno de tons escuros para o layout e cores semân
 * **`text-secondary` (`#a1a1aa` / `text-zinc-400`)**: Usada em rótulos, legendas, caminhos de arquivo e informações secundárias.
 
 ### Cores de Destaque & Ação
-* **`brand-accent` (`#ef4444` / `bg-red-600`)**: Vermelho vibrante, cor identidade do FaceFusion. Usado para botões de CTA primários, bordas de indicadores ativos e marcações de logo.
+* **`brand-accent` (`#ef4444` / `bg-red-600`)**: Vermelho vibrante, cor identidade do YouFace. Usado para botões de CTA primários, bordas de indicadores ativos e marcações de logo.
 * **`brand-hover` (`#dc2626` / `bg-red-700`)**: Tom mais escuro do acento para feedbacks de hover.
 
 ### Cores Semânticas de Status

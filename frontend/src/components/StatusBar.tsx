@@ -25,7 +25,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
       <div className="flex items-center gap-2 text-xs">
         <div
           className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-900/80 border border-zinc-800/80 cursor-default"
-          title="Status da conexão de rede HTTP/SSE com a API FastAPI do FaceFusion no backend (porta 8000)"
+          title="Status da conexão de rede HTTP/SSE com a API FastAPI do YouFace no backend (porta 8000)"
         >
           <span className="flex h-2 w-2 relative">
             <span
@@ -51,7 +51,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({
         <span className="text-zinc-700">|</span>
 
         <span className="text-[11px] text-zinc-500 hidden sm:inline">
-          FaceFusion Core v3.8.2
+          YouFace Core v3.8.2
         </span>
       </div>
 

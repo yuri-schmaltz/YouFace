@@ -1,12 +1,12 @@
-# PRD — FaceFusion Modernizado (Decoupled Architecture)
+# PRD — YouFace Modernizado (Decoupled Architecture)
 
 ## 1. Overview
 
 ### Product Summary
-O **FaceFusion Modernizado** é uma plataforma líder de manipulação e processamento de faces (Face Swap, Face Enhancement, etc.) reformulada sob uma arquitetura desacoplada (decoupled). O sistema separa a lógica de execução de modelos de IA e inteligência computacional de mídia (FastAPI/Python) da camada de interação visual e experiência de usuário (Next.js/React/TypeScript), proporcionando alta fidelidade visual, monitoramento de tarefas em tempo real e facilidade de deploy.
+O **YouFace Modernizado** é uma plataforma líder de manipulação e processamento de faces (Face Swap, Face Enhancement, etc.) reformulada sob uma arquitetura desacoplada (decoupled). O sistema separa a lógica de execução de modelos de IA e inteligência computacional de mídia (FastAPI/Python) da camada de interação visual e experiência de usuário (Next.js/React/TypeScript), proporcionando alta fidelidade visual, monitoramento de tarefas em tempo real e facilidade de deploy.
 
 ### Objective
-Este documento descreve os requisitos de produto, funcionais e técnicos para a consolidação da arquitetura desacoplada do FaceFusion. A meta é garantir uma interface web altamente premium, fluida, offline-first e integrada a uma API REST local robusta que gerencia filas de processamento assíncrono (jobs), monitoramento de hardware, parametrização avançada e controle de ciclo de vida de processadores.
+Este documento descreve os requisitos de produto, funcionais e técnicos para a consolidação da arquitetura desacoplada do YouFace. A meta é garantir uma interface web altamente premium, fluida, offline-first e integrada a uma API REST local robusta que gerencia filas de processamento assíncrono (jobs), monitoramento de hardware, parametrização avançada e controle de ciclo de vida de processadores.
 
 ### Market Differentiation
 Diferente da interface Gradio monolítica original, que mistura renderização de UI com execução de processos pesados na mesma thread de backend limitando a responsabilidade do layout, esta arquitetura desacoplada Next.js + FastAPI oferece:
@@ -41,7 +41,7 @@ graph TD
     API -->|Persiste Jobs| DB[(SQLite Local DB)]
     API -->|Uploads / Outputs| FS[(Filesystem Storage)]
     API -->|Dispara execução| Worker[Background Worker Thread]
-    Worker -->|Consome fila e executa IA| FF_Engine[FaceFusion Core Engine]
+    Worker -->|Consome fila e executa IA| FF_Engine[YouFace Core Engine]
     Worker -->|Atualiza progresso| DB
 ```
 
@@ -52,12 +52,12 @@ graph TD
 | **Styling** | Tailwind CSS + Lucide Icons | Desenvolvimento rápido de layout modular, responsividade nativa e consistência com temas premium escuros (Linear/Vercel). |
 | **Backend** | FastAPI + Uvicorn | API REST rápida e assíncrona em Python, com documentação automática (Swagger) e baixo overhead de comunicação. |
 | **Database** | SQLite + SQLAlchemy ORM | Banco leve, sem necessidade de servidores externos, autocontido em arquivo de disco local e compatível com queries ACID. |
-| **IA Core** | ONNX Runtime / OpenCV / NumPy | Engenho de processamento nativo do FaceFusion para execução local de inferências com suporte a GPU e CPU. |
+| **IA Core** | ONNX Runtime / OpenCV / NumPy | Engenho de processamento nativo do YouFace para execução local de inferências com suporte a GPU e CPU. |
 
 ### Repository Structure
 ```
-my-facefusion/
-├── facefusion/                  # Código principal do motor Python
+my-youface/
+├── youface/                  # Código principal do motor Python
 │   ├── api/                     # Camada desacoplada do backend REST
 │   │   ├── database.py          # Configurações SQLAlchemy e schema SQLite
 │   │   ├── main.py              # Ponto de entrada FastAPI e roteamento estático
@@ -77,7 +77,7 @@ my-facefusion/
 │   │   └── config.json          # URL dinâmica da API gerada no start
 │   ├── tsconfig.json
 │   └── package.json
-├── facefusion.py                # Entrada CLI legada
+├── youface.py                # Entrada CLI legada
 ├── run_api.py                   # Script de inicialização da API + porta livre
 └── docs/
     └── goal/
@@ -125,7 +125,7 @@ A API REST expõe os seguintes endpoints mapeados sob o prefixo `/api`:
 ### 1. Hardware & Processadores
 * **`GET /api/hardware/providers`**: Retorna os provedores de hardware disponíveis no host (ex: `["CUDAExecutionProvider", "CPUExecutionProvider"]`).
 * **`GET /api/hardware/devices`**: Retorna telemetria detalhada de GPUs detectadas (Nome, Uso, Temperatura).
-* **`GET /api/processors/list`**: Varre o diretório do motor do FaceFusion e retorna os processadores utilizáveis (ex: `["face_swapper", "face_enhancer"]`).
+* **`GET /api/processors/list`**: Varre o diretório do motor do YouFace e retorna os processadores utilizáveis (ex: `["face_swapper", "face_enhancer"]`).
 
 ### 2. Configurações do Estado
 * **`GET /api/config`**: Retorna os caminhos de persistência (`temp_path`, `jobs_path`), o nível de logs, número de threads e estratégia de memória do motor de processamento.
@@ -151,7 +151,7 @@ A API REST expõe os seguintes endpoints mapeados sob o prefixo `/api`:
 
 ### Epic: Cockpit Operacional e Produção de Mídia
 **US-001: Dashboard Unificado e Acompanhamento de Fila**
-Como operador do FaceFusion, quero visualizar uma lista em tempo real com as últimas tarefas de processamento de face e suas respectivas barras de progresso para acompanhar a taxa de renderização local.
+Como operador do YouFace, quero visualizar uma lista em tempo real com as últimas tarefas de processamento de face e suas respectivas barras de progresso para acompanhar a taxa de renderização local.
 * *Critérios de Aceitação*:
   * Exibir cartões de jobs recentes com indicadores coloridos de status (Queued = Azul, Processing = Amarelo pulsante, Completed = Verde, Failed = Vermelho).
   * O progresso numérico (0-100%) deve atualizar a cada 2 segundos via polling curto.

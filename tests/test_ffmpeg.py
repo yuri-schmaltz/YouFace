@@ -3,15 +3,15 @@ import tempfile
 
 import pytest
 
-import facefusion.ffmpeg
-from facefusion import ffmpeg, ffmpeg_builder, process_manager, state_manager
-from facefusion.download import conditional_download
-from facefusion.ffmpeg import concat_video, extract_frames, fix_audio_encoder, fix_video_encoder, merge_video, read_audio_buffer, replace_audio, restore_audio
-from facefusion.ffprobe import extract_video_metadata
-from facefusion.filesystem import copy_file
-from facefusion.temp_helper import clear_temp_directory, create_temp_directory, get_temp_file_path, resolve_temp_frame_set
-from facefusion.types import EncoderSet
-from facefusion.vision import predict_video_frame_total, read_image
+import youface.ffmpeg
+from youface import ffmpeg, ffmpeg_builder, process_manager, state_manager
+from youface.download import conditional_download
+from youface.ffmpeg import concat_video, extract_frames, fix_audio_encoder, fix_video_encoder, merge_video, read_audio_buffer, replace_audio, restore_audio
+from youface.ffprobe import extract_video_metadata
+from youface.filesystem import copy_file
+from youface.temp_helper import clear_temp_directory, create_temp_directory, get_temp_file_path, resolve_temp_frame_set
+from youface.types import EncoderSet
+from youface.vision import predict_video_frame_total, read_image
 from .helper import get_test_example_file, get_test_examples_directory, get_test_output_file, prepare_test_output_directory
 
 
@@ -93,7 +93,7 @@ def get_available_encoder_set() -> EncoderSet:
 			'audio': [ 'aac' ],
 			'video': [ 'libx264' ]
 		}
-	return facefusion.ffmpeg.get_available_encoder_set()
+	return youface.ffmpeg.get_available_encoder_set()
 
 
 def test_get_available_encoder_set() -> None:

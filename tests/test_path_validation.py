@@ -10,7 +10,7 @@ Cobre:
 - Não confunde prefixos similares (ex: /tmp/foo vs /tmp/foobar)
 
 NOTA: Os testes extraem a função via AST direto do source de routes.py
-para evitar o `import facefusion.api.routes` que puxa cv2/onnxruntime
+para evitar o `import youface.api.routes` que puxa cv2/onnxruntime
 transitivamente. A função `validate_safe_path` é autocontida.
 """
 import os
@@ -25,14 +25,14 @@ from fastapi import HTTPException
 def _load_validate_safe_path():
     """Extrai a função `validate_safe_path` do source.
 
-    R2: validate_safe_path foi movido para facefusion/api/routes/common.py
+    R2: validate_safe_path foi movido para youface/api/routes/common.py
     quando criamos o pacote routes/. Este teste procura nos dois lugares
     para back-compat com versões anteriores do repo.
     """
     candidates = [
-        Path(__file__).parent.parent / "facefusion" / "api" / "routes" / "common.py",
-        Path(__file__).parent.parent / "facefusion" / "api" / "_legacy_routes.py",
-        Path(__file__).parent.parent / "facefusion" / "api" / "routes.py",
+        Path(__file__).parent.parent / "youface" / "api" / "routes" / "common.py",
+        Path(__file__).parent.parent / "youface" / "api" / "_legacy_routes.py",
+        Path(__file__).parent.parent / "youface" / "api" / "routes.py",
     ]
     for routes_path in candidates:
         if not routes_path.exists():

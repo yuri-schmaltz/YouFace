@@ -1,7 +1,7 @@
 from shutil import which
 
-from facefusion import ffmpeg_builder
-from facefusion.ffmpeg_builder import chain, concat, convert_color_space, keep_video_alpha, restrict_color_transfer, run, seek_to, select_frame_range, set_audio_quality, set_audio_sample_size, set_faststart, set_output_format, set_stream_mode, set_thread_count, set_video_encoder, set_video_fps, set_video_quality, set_video_tag
+from youface import ffmpeg_builder
+from youface.ffmpeg_builder import chain, concat, convert_color_space, keep_video_alpha, restrict_color_transfer, run, seek_to, select_frame_range, set_audio_quality, set_audio_sample_size, set_faststart, set_output_format, set_stream_mode, set_thread_count, set_video_encoder, set_video_fps, set_video_quality, set_video_tag
 
 
 def test_run() -> None:

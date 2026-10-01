@@ -1,7 +1,7 @@
 from shutil import which
 
-from facefusion import ffprobe_builder
-from facefusion.ffprobe_builder import chain, format_to_key_value, run, select_stream, set_input, show_stream_entries
+from youface import ffprobe_builder
+from youface.ffprobe_builder import chain, format_to_key_value, run, select_stream, set_input, show_stream_entries
 
 
 def test_run() -> None:

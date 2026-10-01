@@ -46,10 +46,10 @@ if [[ "$PROFILE" == "auto" ]]; then
 fi
 
 # Iniciar o backend no segundo plano
-"$DIR/facefusion-app" --profile "$PROFILE" &
+"$DIR/youface-app" --profile "$PROFILE" &
 BACKEND_PID=$!
 
-echo "Inicializando o FaceFusion local (profile=$PROFILE)..."
+echo "Inicializando o YouFace local (profile=$PROFILE)..."
 # Aguardar inicializacao
 PORT=8000
 for i in {1..20}; do

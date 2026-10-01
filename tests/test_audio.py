@@ -1,9 +1,9 @@
 
 import pytest
 
-from facefusion import ffmpeg, ffmpeg_builder, process_manager
-from facefusion.audio import get_audio_frame, read_static_audio
-from facefusion.download import conditional_download
+from youface import ffmpeg, ffmpeg_builder, process_manager
+from youface.audio import get_audio_frame, read_static_audio
+from youface.download import conditional_download
 from .helper import get_test_example_file, get_test_examples_directory
 
 

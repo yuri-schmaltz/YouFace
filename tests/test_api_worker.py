@@ -5,9 +5,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from facefusion.api.database import Base, JobModel
+from youface.api.database import Base, JobModel
 # Import worker functions to test
-import facefusion.api.worker as worker
+import youface.api.worker as worker
 
 # Setup isolated in-memory database for worker testing
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -22,7 +22,7 @@ TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engin
 def setup_worker_database():
     Base.metadata.create_all(bind=engine)
     # Override SessionLocal inside worker module to use our testing db
-    with patch("facefusion.api.worker.SessionLocal", TestingSessionLocal):
+    with patch("youface.api.worker.SessionLocal", TestingSessionLocal):
         yield
     Base.metadata.drop_all(bind=engine)
 
@@ -45,17 +45,17 @@ def test_worker_recovery_stuck_jobs() -> None:
 
     # Executar a recuperação do worker mockando a parte do loop infinito
     # Para testar apenas a inicialização e recuperação
-    with patch("facefusion.state_manager.get_item", return_value=".jobs"), \
-         patch("facefusion.state_manager.init_item"), \
-         patch("facefusion.jobs.job_manager.init_jobs"), \
-         patch("facefusion.program.create_program"), \
-         patch("facefusion.args.apply_args"), \
-         patch("facefusion.jobs.job_runner.run_job"):
+    with patch("youface.state_manager.get_item", return_value=".jobs"), \
+         patch("youface.state_manager.init_item"), \
+         patch("youface.jobs.job_manager.init_jobs"), \
+         patch("youface.program.create_program"), \
+         patch("youface.args.apply_args"), \
+         patch("youface.jobs.job_runner.run_job"):
         
         # Chamamos uma versão controlada de worker_loop ou apenas mockamos a chamada de loop
         # Vamos rodar a primeira parte de worker_loop antes do 'while True'
         # Podemos testar isso mockando a parte do loop principal
-        with patch("facefusion.api.worker._worker_stop_event.wait", side_effect=InterruptedError("Stop loop")):
+        with patch("youface.api.worker._worker_stop_event.wait", side_effect=InterruptedError("Stop loop")):
             try:
                 worker.worker_loop()
             except InterruptedError:
@@ -88,14 +88,14 @@ def test_worker_process_success_job() -> None:
     db.close()
 
     # Mockar a chamada real de execução do job
-    with patch("facefusion.jobs.job_runner.run_job", return_value=True) as mock_run_job, \
-         patch("facefusion.state_manager.get_item", return_value=".jobs"), \
-         patch("facefusion.state_manager.set_item"), \
-         patch("facefusion.state_manager.init_item"), \
-         patch("facefusion.program.create_program"), \
-         patch("facefusion.args.apply_args"), \
-         patch("facefusion.jobs.job_manager.init_jobs"), \
-         patch("facefusion.api.worker._worker_stop_event.wait", side_effect=InterruptedError("Stop loop")):
+    with patch("youface.jobs.job_runner.run_job", return_value=True) as mock_run_job, \
+         patch("youface.state_manager.get_item", return_value=".jobs"), \
+         patch("youface.state_manager.set_item"), \
+         patch("youface.state_manager.init_item"), \
+         patch("youface.program.create_program"), \
+         patch("youface.args.apply_args"), \
+         patch("youface.jobs.job_manager.init_jobs"), \
+         patch("youface.api.worker._worker_stop_event.wait", side_effect=InterruptedError("Stop loop")):
         
         try:
             worker.worker_loop()
@@ -129,14 +129,14 @@ def test_worker_process_failed_job() -> None:
     db.close()
 
     # Mockar a chamada real de execução do job retornando False
-    with patch("facefusion.jobs.job_runner.run_job", return_value=False) as mock_run_job, \
-         patch("facefusion.state_manager.get_item", return_value=".jobs"), \
-         patch("facefusion.state_manager.set_item"), \
-         patch("facefusion.state_manager.init_item"), \
-         patch("facefusion.program.create_program"), \
-         patch("facefusion.args.apply_args"), \
-         patch("facefusion.jobs.job_manager.init_jobs"), \
-         patch("facefusion.api.worker._worker_stop_event.wait", side_effect=InterruptedError("Stop loop")):
+    with patch("youface.jobs.job_runner.run_job", return_value=False) as mock_run_job, \
+         patch("youface.state_manager.get_item", return_value=".jobs"), \
+         patch("youface.state_manager.set_item"), \
+         patch("youface.state_manager.init_item"), \
+         patch("youface.program.create_program"), \
+         patch("youface.args.apply_args"), \
+         patch("youface.jobs.job_manager.init_jobs"), \
+         patch("youface.api.worker._worker_stop_event.wait", side_effect=InterruptedError("Stop loop")):
         
         try:
             worker.worker_loop()
@@ -169,14 +169,14 @@ def test_worker_process_exception_handling() -> None:
     db.close()
 
     # Mockar a chamada real de execução do job levantando exceção
-    with patch("facefusion.jobs.job_runner.run_job", side_effect=RuntimeError("GPU out of memory error")) as mock_run_job, \
-         patch("facefusion.state_manager.get_item", return_value=".jobs"), \
-         patch("facefusion.state_manager.set_item"), \
-         patch("facefusion.state_manager.init_item"), \
-         patch("facefusion.program.create_program"), \
-         patch("facefusion.args.apply_args"), \
-         patch("facefusion.jobs.job_manager.init_jobs"), \
-         patch("facefusion.api.worker._worker_stop_event.wait", side_effect=InterruptedError("Stop loop")):
+    with patch("youface.jobs.job_runner.run_job", side_effect=RuntimeError("GPU out of memory error")) as mock_run_job, \
+         patch("youface.state_manager.get_item", return_value=".jobs"), \
+         patch("youface.state_manager.set_item"), \
+         patch("youface.state_manager.init_item"), \
+         patch("youface.program.create_program"), \
+         patch("youface.args.apply_args"), \
+         patch("youface.jobs.job_manager.init_jobs"), \
+         patch("youface.api.worker._worker_stop_event.wait", side_effect=InterruptedError("Stop loop")):
         
         try:
             worker.worker_loop()

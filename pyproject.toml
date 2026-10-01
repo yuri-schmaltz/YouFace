@@ -1,16 +1,16 @@
 [tool.poetry]
-name = "my-facefusion"
-version = "3.9.1-my.1"
+name = "my-youface"
+version = "3.9.1-my.2"
 description = "Next-generation face manipulation application with decoupled architecture"
 authors = ["Yuri Schmaltz <yurischmaltz@gmail.com>"]
 readme = "README.md"
-packages = [{include = "facefusion"}]
+packages = [{include = "youface"}]
 
 [tool.poetry.dependencies]
 python = "^3.12"
 numpy = "2.2.1"
 onnx = "1.21.0"
-# onnxruntime is intentionally NOT pinned here: facefusion/installer.py
+# onnxruntime is intentionally NOT pinned here: youface/installer.py
 # selects the correct flavor (default/cuda@12/cuda@13/openvino/rocm/directml)
 # at install time. Pinning here would cause a mismatch with the install
 # script. See notes/upstream_divergence_2026-09-28.md for the rationale.

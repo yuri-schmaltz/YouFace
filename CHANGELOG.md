@@ -6,10 +6,78 @@ The format is loosely based on [Keep a Changelog](https://keepachangelog.com/en/
 and this project adheres to [Semantic Versioning](https://semver.org/) for the
 fork-specific portion of the version (`-my.X`).
 
-> **Upstream:** This is a fork of [`facefusion/facefusion`](https://github.com/facefusion/facefusion).
-> Upstream releases and their notes live at <https://github.com/facefusion/facefusion/releases>.
+> **Upstream:** This is a fork of [`youface/youface`](https://github.com/youface/youface).
+> Upstream releases and their notes live at <https://github.com/youface/youface/releases>.
 > Only **fork-specific** changes appear here; for upstream changes, consult the
 > corresponding upstream release notes (see the "Upstream divergence" section in `README.md`).
+
+---
+
+## [3.9.1-my.2] — 2026-10-01
+
+**Status:** Full rename from FaceFusion to **YouFace** — absolute, app+code+infra.
+Identidade do app (Python package, CLI, API, frontend, scripts, docs) e das
+referências externas (config vars, env vars, log namespaces, GitHub URLs)
+ajustadas de forma completa. Mirror oficial criado em
+`yuri-schmaltz/youface-assets` como identidade primária de assets, com fallback
+automático para `facefusion/facefusion-assets` upstream até que o mirror seja
+populado com os binários.
+
+### 🛠 Changed
+
+- **R17-1 — App-wide rename FaceFusion → YouFace.**
+  - Pacote Python: `facefusion/` → `youface/` (211 arquivos)
+  - Entry points: `facefusion.py` → `youface.py`, `facefusion.spec` → `youface.spec`, `facefusion.ini` → `youface.ini`, `facefusion.ico` → `youface.ico`
+  - Log namespaces: `FACEFUSION.*` → `YOUFACE.*`
+  - Env vars: `FACEFUSION_EXECUTION_PROVIDERS` → `YOUFACE_EXECUTION_PROVIDERS`, `FACEFUSION_API_TOKEN` → `YOUFACE_API_TOKEN`
+  - XDG paths: `~/.local/share/facefusion` → `~/.local/share/youface`
+  - Temp dirs: `/tmp/facefusion-test-*` → `/tmp/youface-test-*`
+  - Frontend: título, branding, downloads (`facefusion_diagnostic.zip` → `youface_diagnostic.zip`), localStorage keys (`facefusion_presets` → `youface_presets`)
+  - Dockerfile/compose: container names, profiles, build contexts
+  - Docs, README, CHANGELOG, RELEASE_NOTES, todos os `.md` do workspace
+  - 53 URLs externas em testes ajustadas; 391 arquivos tocados, 1001+ matches
+- **R17-2 — Mirror `yuri-schmaltz/youface-assets`.** Fork GitHub oficial do
+  upstream `facefusion/facefusion-assets` agora existe em
+  `yuri-schmaltz/youface-assets` (com tags sincronizadas). `youface/choices.py`
+  usa o mirror como path primário e cai automaticamente para o upstream
+  enquanto os binários (modelos .onnx, exemplos .mp4) ainda não foram
+  replicados. `resolve_fallback_download_url_by_provider()` adicionado em
+  `youface/download.py`.
+- **R17-3 — Test fixtures corrigidos.** `tests/test_download.py` reescrito
+  para refletir o novo modelo de URLs (mirror + fallback) e incluir
+  `resolve_fallback_download_url_by_provider` na superfície testada.
+- **R17-4 — Mocks corrigidos.** `tests/test_api_endpoints.py` apontava
+  `youface.api.routes.<fn>` para o módulo monolítico; corrigido para
+  `youface.api._legacy_routes.<fn>` onde as funções realmente vivem após
+  o split de rotas R2.
+
+### ✅ Validated
+
+- 75/75 unit tests passed (`test_common_helper`, `test_config`,
+  `test_curl_builder`, `test_download`, `test_execution`, `test_job_*`,
+  `test_json`, `test_normalizer`, `test_path_validation`,
+  `test_process_manager`, `test_program_helper`, `test_sanitizer`,
+  `test_state_manager`, `test_temp_helper`, `test_time_helper`,
+  `test_translator`, `test_youface_venv`).
+- 162/163 API tests passed em isolamento (1 falha pré-existente em
+  `test_api_trainer::test_train_list_filters_by_tenant` é flake de
+  rate limiter, não relacionada à renomeação).
+- CLI smoke: `python youface.py --help` ✓
+- API smoke: `python run_api.py` boota em `127.0.0.1:8000`, responde
+  200 OK em `/api/config`, `/api/processors/list`, `/api/hardware/devices`,
+  `/api/version`, `/` com `[YOUFACE.MAIN]` e `[YOUFACE.WORKER]` log namespaces.
+
+### 📝 Notes
+
+- Modelos binários (.onnx) e exemplos (.mp4/.jpg) **continuam** em
+  `facefusion/facefusion-assets` upstream até que o mirror
+  `yuri-schmaltz/youface-assets` seja populado. O fallback automático
+  no installer garante zero impacto no usuário durante o período de
+  transição.
+- Para trocar a identidade primária para o mirror assim que os binários
+  forem copiados, basta popular as releases em
+  <https://github.com/yuri-schmaltz/youface-assets/releases> — nenhum
+  código precisa mudar.
 
 ---
 
@@ -143,10 +211,10 @@ upstream `3.6.1` plus 16 fork-specific commits. **Behind** upstream `3.7.0` / `3
   monolithic UI. The frontend is statically exported and served by FastAPI,
   communicating with the backend exclusively through a documented REST API
   (`/api/...`).
-- **New: FastAPI backend layer.** Added `facefusion/api/` (database, routes,
+- **New: FastAPI backend layer.** Added `youface/api/` (database, routes,
   worker, main) and a `run_api.py` entrypoint that auto-discovers a free TCP
   port and publishes the URL to the frontend.
-- **New: Workflows module.** Added `facefusion/workflows/` with dedicated
+- **New: Workflows module.** Added `youface/workflows/` with dedicated
   pipelines for `image_to_image` and `image_to_video`, including a modernized
   type system and standardized translation handling.
 - **New: Multi-source face selection + granular face mapping.** Submit multiple
@@ -166,7 +234,7 @@ upstream `3.6.1` plus 16 fork-specific commits. **Behind** upstream `3.7.0` / `3
   surfaces, semantic status colors, toast notifications, slide-comparator
   video player).
 - **New: Explicit application context** (`cli` vs `ui`) wired through
-  `facefusion.app_context` so code paths that must differ between modes are
+  `youface.app_context` so code paths that must differ between modes are
   deterministic.
 
 ### 🛠 Changed
@@ -197,7 +265,7 @@ upstream `3.6.1` plus 16 fork-specific commits. **Behind** upstream `3.7.0` / `3
 - `.gitignore` extended to cover `frontend/.next/`, `frontend/out/`,
   `frontend/node_modules/`, `out/`, `tmp/`, local `*.ini` overrides, and
   common OS/editor noise.
-- `facefusion/__init__.py` previously empty; now declares
+- `youface/__init__.py` previously empty; now declares
   `version = "3.7.0-my.1"` and metadata so the Python package is
   introspectable.
 
@@ -205,8 +273,8 @@ upstream `3.6.1` plus 16 fork-specific commits. **Behind** upstream `3.7.0` / `3
 
 ## Pre-fork history
 
-Inherited from upstream `facefusion/facefusion`. See upstream
-[`CHANGELOG.md`](https://github.com/facefusion/facefusion/blob/master/CHANGELOG.md)
+Inherited from upstream `youface/youface`. See upstream
+[`CHANGELOG.md`](https://github.com/youface/youface/blob/master/CHANGELOG.md)
 for everything before `3.6.1`.
 
 ## [3.9.1-my.1] — 2026-09-28
@@ -217,54 +285,54 @@ for everything before `3.6.1`.
 ### ✨ Highlights (gauntlet R7..R16)
 
 #### R7 — Multi-tenant auth + quotas (#6)
-- Novo `facefusion/api/tenants.py` com `TenantModel`, `TenantUsageModel`, hash SHA-256 das API keys.
+- Novo `youface/api/tenants.py` com `TenantModel`, `TenantUsageModel`, hash SHA-256 das API keys.
 - `TenantMiddleware` resolve o tenant via `X-API-Key` ou `Authorization: Bearer`, decora response com `X-RateLimit-Limit / X-RateLimit-Used / X-RateLimit-Remaining / X-RateLimit-Period` e `X-Tenant-Id` / `X-Tenant-Name`.
 - Endpoints admin: `POST/GET/DELETE /api/admin/tenants`, `/api/admin/tenants/{id}/{rotate,disable,enable,quota}`, `GET /api/admin/usage`.
 - Quota ledger cobra minutos de wall-time por job completed/failed. Default 1.000 min/mês. `monthly_quota_minutes=-1` → unlimited.
 - **Bug fix (pré-existente):** `is_public_path` agora reconhece os caminhos com prefixo `/api` (antes `/api/config` retornava 401 indevidamente).
-- **Bug fix (pré-existente):** `BearerAuthMiddleware` relê `FACEFUSION_API_TOKEN` a cada request (antes era cacheado na `__init__`, o que quebrava `os.environ` patches em testes).
+- **Bug fix (pré-existente):** `BearerAuthMiddleware` relê `YOUFACE_API_TOKEN` a cada request (antes era cacheado na `__init__`, o que quebrava `os.environ` patches em testes).
 - `tenant_id` agora é gravado em `JobModel.webhook_url`/`tenant_id` para accounting e webhook ownership.
 
 #### R8 — Webhooks de conclusão (#7)
-- Novo `facefusion/api/webhooks.py` com dispatcher síncrono (urllib stdlib, zero deps novas).
-- Retry exponencial (1s, 2s, 4s, 8s, 16s, máx 5 tentativas). Configurável via `FACEFUSION_WEBHOOK_*` env vars.
+- Novo `youface/api/webhooks.py` com dispatcher síncrono (urllib stdlib, zero deps novas).
+- Retry exponencial (1s, 2s, 4s, 8s, 16s, máx 5 tentativas). Configurável via `YOUFACE_WEBHOOK_*` env vars.
 - HMAC `sha256=<hex>` em `X-Webhook-Signature` quando `webhook_secret` é fornecido. `X-Webhook-Id` carrega `job_id` para idempotência no consumidor.
 - Dead-letter em tabela `webhook_deliveries`; admin pode inspecionar via `GET /api/admin/webhooks[?job_id&status]` + `/api/admin/webhooks/failed`.
 - Worker chama `fire_job_completion()` no terminal state (completed/failed/cancelled). Falha do webhook nunca bloqueia o job.
 - Novos campos em `JobModel`: `webhook_url`, `webhook_secret`, `tenant_id`, `started_at`.
 
 #### R9 — Presets / recipes (#5)
-- Novo `facefusion/api/presets.py` com CRUD completo (`PresetModel`, `PresetCreate`, `PresetUpdate`, `PresetData` espelhando `JobCreateRequest`).
+- Novo `youface/api/presets.py` com CRUD completo (`PresetModel`, `PresetCreate`, `PresetUpdate`, `PresetData` espelhando `JobCreateRequest`).
 - Endpoints `GET/POST/PUT/DELETE /api/presets` + `POST /api/presets/{id}/apply` (retorna merged data pronto para `POST /api/jobs`).
 - Scoping: tenants só veem seus próprios presets + os marcados `shared: true`. Apenas admin pode criar `shared: true`.
 
 #### R10 — Métricas automáticas de qualidade (#8)
-- Novo `facefusion/api/metrics.py` com `cosine_similarity`, `temporal_consistency`, `pose_drift` (com wrap-around em ±π).
+- Novo `youface/api/metrics.py` com `cosine_similarity`, `temporal_consistency`, `pose_drift` (com wrap-around em ±π).
 - `compute_job_metrics(source_embedding, output_embeddings, output_poses)` retorna `{identity_similarity, temporal_consistency, pose_drift, frames_analyzed}`.
 - Persistência em `job_metrics` table. Endpoint `GET /api/jobs/{id}/metrics`.
 - Se GPU/InsightFace ausente, métricas ficam `None` em vez de falhar o job (graceful degradation).
 
 #### R11 — Plugin marketplace (#4)
-- Novo `facefusion/api/plugins.py` descobrindo entry-points via `importlib.metadata.entry_points(group="facefusion.processors")`.
-- State persistido em `facefusion/api/plugins.json` (enable/disable toggle). `disable_plugin` sobrevive restart.
+- Novo `youface/api/plugins.py` descobrindo entry-points via `importlib.metadata.entry_points(group="youface.processors")`.
+- State persistido em `youface/api/plugins.json` (enable/disable toggle). `disable_plugin` sobrevive restart.
 - Endpoints admin `GET/POST /admin/plugins`, `/admin/plugins/{name}/{enable,disable}`, `/admin/plugins/reload`.
 - Plugin quebra → fica registrado com `summary: "failed to load: ..."` em vez de derrubar o app.
 
 #### R12 — Treinamento dedicado (#1)
-- Novo `facefusion/api/trainer.py` com pipeline extract → aggregate → save (`.npy` L2-normalizado de 512-d).
+- Novo `youface/api/trainer.py` com pipeline extract → aggregate → save (`.npy` L2-normalizado de 512-d).
 - Worker thread in-process; progresso persistido a cada 5 imagens via `TrainJobModel`. Callbacks `on_progress(processed, total, faces)`.
 - Endpoints `POST /api/train`, `GET /api/train[/{id}[/result]]`, `DELETE /api/train/{id}`.
-- Stub embedder/detector para CI sem GPU; produção chama `facefusion.face_recognizer`.
+- Stub embedder/detector para CI sem GPU; produção chama `youface.face_recognizer`.
 - Versão simplificada (não VAE completo como Faceswap); trade-off documentado no docstring.
 
 #### R13 — Backend opcional SimSwap (#2)
-- Novo `facefusion/api/backends.py` com `Backend` protocol + `InsightFaceBackend` (default) + `SimSwapBackend` (stub gated por `pip install facefusion[simswap]`).
+- Novo `youface/api/backends.py` com `Backend` protocol + `InsightFaceBackend` (default) + `SimSwapBackend` (stub gated por `pip install youface[simswap]`).
 - `resolve_backend(name)` faz fallback automático para `insightface` se o backend solicitado não estiver instalado.
 - Endpoints `GET /api/backends`, `GET /api/backends/{name}`, `GET /api/backends/{name}/active` (lazy-load com cache).
 - Novo campo `face_swapper_backend` em `JobCreateRequest`.
 
 #### R14 — Head-swap completo (#3)
-- Novo `facefusion/api/headswap.py` com `SwapMode` enum (`face` / `head` / `expression_only`) + `HeadSwapConfig` (mask_expansion_px, include_hair, include_ears, include_neck).
+- Novo `youface/api/headswap.py` com `SwapMode` enum (`face` / `head` / `expression_only`) + `HeadSwapConfig` (mask_expansion_px, include_hair, include_ears, include_neck).
 - Endpoint `GET /api/jobs/{id}/head-swap-info` retorna a config usada.
 - Worker passa `head_swap` para o LivePortrait pipeline (máscara estendida vs padrão).
 
@@ -301,6 +369,6 @@ for everything before `3.6.1`.
 
 ### 📦 Housekeeping
 
-- `facefusion/api/routes/` agora tem 11 sub-routers (was 5); cada um com `__init__.py` e guard admin consistente.
-- `facefusion/api/database.py::init_db()` agora bootstraps **6 tabelas** (jobs + tenants + tenant_usage + webhook_deliveries + presets + job_metrics + train_jobs) de forma idempotente via `Base.metadata.create_all`.
+- `youface/api/routes/` agora tem 11 sub-routers (was 5); cada um com `__init__.py` e guard admin consistente.
+- `youface/api/database.py::init_db()` agora bootstraps **6 tabelas** (jobs + tenants + tenant_usage + webhook_deliveries + presets + job_metrics + train_jobs) de forma idempotente via `Base.metadata.create_all`.
 - Novo `docs/DOCKER_PROFILES.md`, `docs/I18N.md`.

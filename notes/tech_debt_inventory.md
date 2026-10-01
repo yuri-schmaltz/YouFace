@@ -62,9 +62,9 @@
 - `MaxBodySize` (200 MB cap)
 
 ### Novos submódulos routes (3, parciais)
-- `facefusion/api/routes/common.py` (helpers)
-- `facefusion/api/routes/hardware.py` (4 endpoints)
-- `facefusion/api/routes/config.py` (2 endpoints)
+- `youface/api/routes/common.py` (helpers)
+- `youface/api/routes/hardware.py` (4 endpoints)
+- `youface/api/routes/config.py` (2 endpoints)
 - **Migração completa: deferida** — `routes.py` ainda é o source-of-truth
 
 ### Novos scripts (1)

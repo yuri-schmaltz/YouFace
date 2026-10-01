@@ -122,7 +122,7 @@ export function useStudioActions(options: UseStudioActionsOptions): UseStudioAct
       const blob = await res.blob();
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = "facefusion_diagnostic.zip";
+      a.download = "youface_diagnostic.zip";
       a.click();
       URL.revokeObjectURL(a.href);
       showToast("success", "Diagnóstico Exportado", "Bundle baixado com sucesso.");

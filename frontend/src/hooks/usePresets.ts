@@ -56,7 +56,7 @@ export function usePresets() {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("facefusion_presets");
+      const saved = localStorage.getItem("youface_presets");
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
@@ -83,7 +83,7 @@ export function usePresets() {
 
     try {
       const customs = updated.filter(p => p.isCustom);
-      localStorage.setItem("facefusion_presets", JSON.stringify(customs));
+      localStorage.setItem("youface_presets", JSON.stringify(customs));
       return true;
     } catch {
       return false;

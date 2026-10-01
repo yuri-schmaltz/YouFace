@@ -1,8 +1,8 @@
 """
-Tests for the BearerAuthMiddleware in facefusion/api/auth.py.
+Tests for the BearerAuthMiddleware in youface/api/auth.py.
 
 Covers:
-- Auth disabled when FACEFUSION_API_TOKEN is unset (backward compat)
+- Auth disabled when YOUFACE_API_TOKEN is unset (backward compat)
 - Auth required when token is set
 - Public GET paths bypass auth
 - Non-GET (POST/PUT/DELETE) always require auth
@@ -17,9 +17,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from facefusion.api.main import app
-from facefusion.api.database import Base, get_db
-from facefusion.api.auth import (
+from youface.api.main import app
+from youface.api.database import Base, get_db
+from youface.api.auth import (
     BearerAuthMiddleware,
     generate_token,
     get_configured_token,
@@ -70,8 +70,8 @@ def test_generate_token_returns_urlsafe_string():
 
 
 def test_get_configured_token_returns_env_value():
-    """get_configured_token() reads FACEFUSION_API_TOKEN env var."""
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "test-token-xyz"}):
+    """get_configured_token() reads YOUFACE_API_TOKEN env var."""
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "test-token-xyz"}):
         assert get_configured_token() == "test-token-xyz"
     with patch.dict(os.environ, {}, clear=True):
         assert get_configured_token() is None
@@ -117,7 +117,7 @@ def test_is_public_path_recognizes_whitelist():
 # ---------------------------------------------------------------------------
 
 def test_auth_disabled_when_no_env_var(client):
-    """No FACEFUSION_API_TOKEN -> all requests pass without auth."""
+    """No YOUFACE_API_TOKEN -> all requests pass without auth."""
     with patch.dict(os.environ, {}, clear=True):
         # POST should work without Authorization
         resp = client.post("/api/jobs", json={})
@@ -127,7 +127,7 @@ def test_auth_disabled_when_no_env_var(client):
 
 def test_auth_required_when_env_var_set(client):
     """When token is set, POST without auth returns 401."""
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "test-secret"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "test-secret"}):
         resp = client.post("/api/jobs", json={})
         assert resp.status_code == 401
         assert "Authorization" in resp.json()["detail"]
@@ -135,7 +135,7 @@ def test_auth_required_when_env_var_set(client):
 
 def test_auth_accepts_correct_bearer(client):
     """With env var set, valid Bearer token allows POST through."""
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "test-secret"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "test-secret"}):
         # Wrong token
         resp_wrong = client.post(
             "/api/jobs",
@@ -156,7 +156,7 @@ def test_auth_accepts_correct_bearer(client):
 
 def test_public_get_paths_bypass_auth(client):
     """GET on whitelisted paths works without auth even when token is set."""
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "test-secret"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "test-secret"}):
         # These should all be 200 (no auth)
         assert client.get("/api/hardware/devices").status_code == 200
         assert client.get("/api/hardware/providers").status_code == 200
@@ -167,7 +167,7 @@ def test_public_get_paths_bypass_auth(client):
 
 def test_non_get_on_whitelisted_path_still_requires_auth(client):
     """POST on /api/config (which is whitelisted for GET) still needs auth."""
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "test-secret"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "test-secret"}):
         resp = client.post(
             "/api/config",
             json={"log_level": "debug"},
@@ -177,7 +177,7 @@ def test_non_get_on_whitelisted_path_still_requires_auth(client):
 
 def test_unauthorized_response_includes_www_authenticate(client):
     """401 response must include WWW-Authenticate header per RFC 7235."""
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "test-secret"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "test-secret"}):
         resp = client.post("/api/jobs", json={})
         assert resp.status_code == 401
         assert "www-authenticate" in {k.lower() for k in resp.headers}
@@ -186,7 +186,7 @@ def test_unauthorized_response_includes_www_authenticate(client):
 
 def test_options_request_bypasses_auth(client):
     """CORS preflight (OPTIONS) always bypasses auth."""
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "test-secret"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "test-secret"}):
         resp = client.options(
             "/api/jobs",
             headers={

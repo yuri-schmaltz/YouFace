@@ -17,8 +17,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from facefusion.api import presets as presets_mod
-from facefusion.api import tenants as tenants_mod
+from youface.api import presets as presets_mod
+from youface.api import tenants as tenants_mod
 
 
 # ---------------------------------------------------------------------------
@@ -33,7 +33,7 @@ def isolated_preset_db(tmp_path):
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    from facefusion.api.database import Base
+    from youface.api.database import Base
     Base.metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     with patch.object(presets_mod, "SessionLocal", SessionLocal):
@@ -168,7 +168,7 @@ def test_name_filter_substring_case_insensitive():
 #
 # We test the presets routes by mounting ONLY the presets + tenants routers
 # into a minimal FastAPI app — this avoids spinning up the worker thread
-# that the full facefusion/api/main.py app starts in its lifespan, which
+# that the full youface/api/main.py app starts in its lifespan, which
 # would hang the test suite.
 # ---------------------------------------------------------------------------
 
@@ -176,10 +176,10 @@ def test_name_filter_substring_case_insensitive():
 def preset_app(tmp_path):
     """A minimal FastAPI app exposing just the presets + tenants routers."""
     from fastapi import FastAPI
-    from facefusion.api.routes import presets as presets_routes
-    from facefusion.api.routes import tenants as tenants_routes
-    from facefusion.api.middleware import TenantMiddleware
-    from facefusion.api.database import get_db, Base
+    from youface.api.routes import presets as presets_routes
+    from youface.api.routes import tenants as tenants_routes
+    from youface.api.middleware import TenantMiddleware
+    from youface.api.database import get_db, Base
 
     db_path = tmp_path / "http.db"
     engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False}, poolclass=StaticPool)
@@ -221,7 +221,7 @@ def test_list_requires_auth(preset_app):
 
 
 def test_create_and_list_with_admin_token(preset_app):
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         payload = {
             "name": "reels",
             "description": "Instagram reels preset",
@@ -245,7 +245,7 @@ def test_create_and_list_with_admin_token(preset_app):
 
 
 def test_create_duplicate_name_returns_409(preset_app):
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         payload = {"name": "dupe", "data": {}}
         r1 = preset_app.post("/api/presets", json=payload, headers={"Authorization": "Bearer admin"})
         assert r1.status_code == 200
@@ -254,7 +254,7 @@ def test_create_duplicate_name_returns_409(preset_app):
 
 
 def test_create_with_missing_name_returns_422(preset_app):
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         res = preset_app.post(
             "/api/presets",
             json={"data": {}},
@@ -264,7 +264,7 @@ def test_create_with_missing_name_returns_422(preset_app):
 
 
 def test_get_update_delete_lifecycle(preset_app):
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         # create
         c = preset_app.post(
             "/api/presets",
@@ -298,7 +298,7 @@ def test_get_update_delete_lifecycle(preset_app):
 
 
 def test_apply_returns_merged_data(preset_app):
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         c = preset_app.post(
             "/api/presets",
             json={
@@ -331,7 +331,7 @@ def test_apply_returns_merged_data(preset_app):
 def test_tenant_sees_only_own_and_shared(preset_app):
     """Two tenants + an admin; each tenant sees only their own + shared."""
     # Create tenant A and B via admin
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         a = preset_app.post(
             "/api/admin/tenants",
             json={"name": "tenant-a"},

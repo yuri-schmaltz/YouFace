@@ -24,7 +24,7 @@ right profile if you don't pass `--profile`.
 
 | File | Overrides | Why |
 |------|-----------|-----|
-| `docker-compose.nvidia.yml` | Adds `nvidia` device reservation, sets `FACEFUSION_EXECUTION_PROVIDERS=cuda` | Lets the backend see all NVIDIA GPUs |
+| `docker-compose.nvidia.yml` | Adds `nvidia` device reservation, sets `YOUFACE_EXECUTION_PROVIDERS=cuda` | Lets the backend see all NVIDIA GPUs |
 | `docker-compose.amd.yml` | Adds `/dev/kfd`, `/dev/dri` device passthrough, sets `HSA_OVERRIDE_GFX_VERSION` and `rocm` provider | ROCm support in onnxruntime |
 | `docker-compose.cpu.yml` | Caps CPU+memory usage, forces `cpu` execution provider | Works on any host, no GPU drivers required |
 
@@ -32,12 +32,12 @@ right profile if you don't pass `--profile`.
 
 | Var | Default | Used by |
 |-----|---------|---------|
-| `FACEFUSION_EXECUTION_PROVIDERS` | auto-detected at startup | All profiles |
-| `FACEFUSION_EXECUTION_THREAD_COUNT` | unset (= all cores) | CPU profile |
-| `FACEFUSION_API_TOKEN` | unset | Bearer auth for `/api/admin/*` |
-| `FACEFUSION_WEBHOOK_MAX_ATTEMPTS` | 5 | Webhook delivery |
-| `FACEFUSION_WEBHOOK_BACKOFF_BASE` | 1.0 | Webhook delivery |
-| `FACEFUSION_WEBHOOK_TIMEOUT` | 10 | Webhook delivery |
+| `YOUFACE_EXECUTION_PROVIDERS` | auto-detected at startup | All profiles |
+| `YOUFACE_EXECUTION_THREAD_COUNT` | unset (= all cores) | CPU profile |
+| `YOUFACE_API_TOKEN` | unset | Bearer auth for `/api/admin/*` |
+| `YOUFACE_WEBHOOK_MAX_ATTEMPTS` | 5 | Webhook delivery |
+| `YOUFACE_WEBHOOK_BACKOFF_BASE` | 1.0 | Webhook delivery |
+| `YOUFACE_WEBHOOK_TIMEOUT` | 10 | Webhook delivery |
 
 ## Choosing the right onnxruntime flavor
 
@@ -52,7 +52,7 @@ The base Dockerfile installs `onnxruntime` (CPU). For GPU, you need:
 - **Apple Silicon** — `onnxruntime-silicon` or build from source;
   Apple GPUs are also accessible via CoreML.
 
-`facefusion/installer.py` selects the right flavor at install time
+`youface/installer.py` selects the right flavor at install time
 based on the host GPU. Re-run `python install.py` after switching
 profiles if the wheels don't match.
 

@@ -1,5 +1,5 @@
 """
-Wrapper inteligente em torno de `facefusion/installer.py`.
+Wrapper inteligente em torno de `youface/installer.py`.
 
 Problemas resolvidos em relação ao instalador upstream:
   - Não exige argumento posicional -- detecta GPU/CUDA e escolhe a
@@ -46,8 +46,8 @@ from requirements_helper import RequirementsReport, parse as parse_reqs  # noqa:
 
 
 # Não usamos mais UPSTREAM_INSTALLER_PATH — invocamos via
-# `python -m facefusion.installer` para evitar o sombreamento de
-# `facefusion/types.py` sobre o stdlib `types` quando o script é
+# `python -m youface.installer` para evitar o sombreamento de
+# `youface/types.py` sobre o stdlib `types` quando o script é
 # executado diretamente (ver _invoke_upstream).
 
 
@@ -284,13 +284,13 @@ def _invoke_upstream(flavor: str, force_reinstall: bool,
                      extra_args: Sequence[str] = ()) -> int:
     """Roda o instalador upstream com os args certos. Retorna exit code.
 
-    Importante: usamos `python -m facefusion.installer` em vez de
-    `python facefusion/installer.py` direto. O segundo modo adiciona
-    `facefusion/` ao `sys.path[0]`, o que faz com que o arquivo
-    `facefusion/types.py` sombreie o módulo stdlib `types`. Aí qualquer
+    Importante: usamos `python -m youface.installer` em vez de
+    `python youface/installer.py` direto. O segundo modo adiciona
+    `youface/` ao `sys.path[0]`, o que faz com que o arquivo
+    `youface/types.py` sombreie o módulo stdlib `types`. Aí qualquer
     import de stdlib que dependa de `types.GenericAlias` (subprocess,
     functools, threading, enum) cai em circular import. O `-m` mantém
-    o project root como sys.path[0] e importa `facefusion.installer`
+    o project root como sys.path[0] e importa `youface.installer`
     como módulo do package — sem sombreamento.
 
     Após o upstream rodar, **verificamos** se o pacote onnxruntime foi
@@ -306,7 +306,7 @@ def _invoke_upstream(flavor: str, force_reinstall: bool,
         return _install_in_venv(flavor, force_reinstall, reqs=parse_reqs("requirements.txt"))
 
     # Caso 2: tentar upstream normalmente
-    cmd = [sys.executable, "-m", "facefusion.installer", flavor]
+    cmd = [sys.executable, "-m", "youface.installer", flavor]
     if force_reinstall:
         cmd.append("--force-reinstall")
     if skip_conda:
@@ -523,7 +523,7 @@ def cmd_install(args: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="youface_install",
-        description="Smart wrapper around facefusion installer. Detects GPU/CUDA, "
+        description="Smart wrapper around youface installer. Detects GPU/CUDA, "
                     "picks the right onnxruntime flavor, validates environment, "
                     "and shows pre-flight before pip install.",
         formatter_class=argparse.RawDescriptionHelpFormatter,

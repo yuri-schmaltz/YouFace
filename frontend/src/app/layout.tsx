@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FaceFusion — Plataforma Profissional de Face Swap",
+  title: "YouFace — Plataforma Profissional de Face Swap",
   description: "Plataforma premium de manipulação facial com IA: Face Swap, Face Enhancement e processamento local acelerado por GPU. Arquitetura desacoplada com API REST e interface Next.js.",
 };
 

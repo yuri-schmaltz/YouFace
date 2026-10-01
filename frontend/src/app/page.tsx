@@ -1065,7 +1065,7 @@ export default function Home() {
             </div>
           )}
 
-          {/* TAB 1: PROJETOS (Galeria no disco em ~/Vídeos/FaceFusion_Projects) */}
+          {/* TAB 1: PROJETOS (Galeria no disco em ~/Vídeos/YouFace_Projects) */}
           {activeTab === "projects" && (
             <ProjectsGallery
               projects={projects}

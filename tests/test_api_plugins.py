@@ -15,8 +15,8 @@ from unittest.mock import patch
 
 import pytest
 
-from facefusion.api import plugins as plugins_mod
-from facefusion.api.routes import plugins as plugin_routes
+from youface.api import plugins as plugins_mod
+from youface.api.routes import plugins as plugin_routes
 
 
 # ---------------------------------------------------------------------------
@@ -105,7 +105,7 @@ def test_discover_returns_empty_when_no_plugins():
 def test_discover_returns_plugin_metadata():
     eps = _stub_entry_points(
         _make_ep("my_proc", plugins_mod.ENTRY_POINT_GROUP,
-                 target="MyProc", dist_name="acme-facefusion",
+                 target="MyProc", dist_name="acme-youface",
                  dist_version="2.3.4", docstring="Acme plugin."),
     )
     with patch.object(plugins_mod.importlib.metadata, "entry_points",
@@ -115,7 +115,7 @@ def test_discover_returns_plugin_metadata():
     assert len(result) == 1
     p = result[0]
     assert p.name == "my_proc"
-    assert p.distribution == "acme-facefusion"
+    assert p.distribution == "acme-youface"
     assert p.version == "2.3.4"
     assert p.enabled is True
     assert "Acme plugin" in (p.summary or "")
@@ -272,7 +272,7 @@ def test_admin_endpoints_round_trip(tmp_path, monkeypatch):
     """Full HTTP flow: list → disable → list → enable → list."""
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
-    from facefusion.api.middleware import TenantMiddleware
+    from youface.api.middleware import TenantMiddleware
 
     fake_state = tmp_path / "plugins.json"
     monkeypatch.setattr(plugins_mod, "DEFAULT_STATE_FILE", str(fake_state))
@@ -288,7 +288,7 @@ def test_admin_endpoints_round_trip(tmp_path, monkeypatch):
 
     with patch.object(plugins_mod.importlib.metadata, "entry_points",
                       return_value=eps):
-        with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "adm"}):
+        with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "adm"}):
             with TestClient(app) as c:
                 # List
                 res = c.get("/api/admin/plugins", headers={"Authorization": "Bearer adm"})
@@ -342,7 +342,7 @@ def test_admin_show_unknown_returns_404(tmp_path, monkeypatch):
     app.include_router(plugin_routes.router, prefix="/api")
     with patch.object(plugins_mod.importlib.metadata, "entry_points",
                       return_value=_stub_entry_points()):
-        with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "adm"}):
+        with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "adm"}):
             with TestClient(app) as c:
                 res = c.get("/api/admin/plugins/ghost", headers={"Authorization": "Bearer adm"})
                 assert res.status_code == 404

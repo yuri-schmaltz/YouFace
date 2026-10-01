@@ -9,7 +9,7 @@ Covers:
 """
 import pytest
 
-from facefusion.api import headswap as headswap_mod
+from youface.api import headswap as headswap_mod
 
 
 # ---------------------------------------------------------------------------
@@ -109,9 +109,9 @@ def headswap_app(tmp_path):
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.pool import StaticPool
-    from facefusion.api.database import Base
-    from facefusion.api.routes import headswap as headswap_routes
-    from facefusion.api import database as db_mod
+    from youface.api.database import Base
+    from youface.api.routes import headswap as headswap_routes
+    from youface.api import database as db_mod
 
     db_path = tmp_path / "head.db"
     engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False}, poolclass=StaticPool)
@@ -139,7 +139,7 @@ def test_head_swap_info_returns_default_when_no_job(headswap_app):
 def test_head_swap_info_returns_summary(headswap_app):
     """When a job exists, the endpoint returns a valid summary."""
     client, SessionLocal = headswap_app
-    from facefusion.api.database import JobModel
+    from youface.api.database import JobModel
     with SessionLocal() as db:
         db.add(JobModel(
             id="job-head-1",

@@ -301,7 +301,7 @@ export const ProjectsGallery: React.FC<ProjectsGalleryProps> = ({
             <h3 className="text-base font-bold text-white mb-1.5">Nenhum projeto criado ainda</h3>
             <p className="text-xs text-zinc-500 mb-6 leading-relaxed">
               Cada renderização iniciada cria automaticamente uma subpasta em{" "}
-              <span className="font-mono text-zinc-400">~/Vídeos/FaceFusion_Projects/</span> com as mídias de origem, destino e o produto final perfeitamente isolados.
+              <span className="font-mono text-zinc-400">~/Vídeos/YouFace_Projects/</span> com as mídias de origem, destino e o produto final perfeitamente isolados.
             </p>
             <button
               onClick={onRequestNewProject || onNavigateToStudio}

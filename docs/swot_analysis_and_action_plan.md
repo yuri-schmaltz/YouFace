@@ -1,5 +1,5 @@
 # Relatório Executivo: Análise SWOT & Plano de Ação Estratégico
-**Projeto:** `faceYou` (FaceFusion Modernizado / Decoupled Fork)  
+**Projeto:** `faceYou` (YouFace Modernizado / Decoupled Fork)  
 **Versão Atual:** `3.7.0-my.1` (Base Upstream: `3.6.1`)  
 **Data:** 02 de Setembro de 2026  
 **Autor:** Antigravity AI Pair Programmer  
@@ -8,7 +8,7 @@
 
 ## 1. Sumário Executivo
 
-O projeto **faceYou** é um fork modernizado do motor open-source de ponta [FaceFusion](https://github.com/facefusion/facefusion). A principal inovação do fork é a **descontinuação da UI monolítica legada em Gradio** em prol de uma **arquitetura desacoplada cliente-servidor** composta por:
+O projeto **faceYou** é um fork modernizado do motor open-source de ponta [YouFace](https://github.com/youface/youface). A principal inovação do fork é a **descontinuação da UI monolítica legada em Gradio** em prol de uma **arquitetura desacoplada cliente-servidor** composta por:
 1. **Cockpit Web Moderno**: Desenvolvido em **Next.js 16 + React 19 + Tailwind CSS 4**, oferecendo uma experiência premium com glassmorphism, comparador deslizante de frames (Antes/Depois), mapeamento granular multi-source de faces e telemetria de hardware em tempo real.
 2. **Backend FastAPI Assíncrono**: Um wrapper RESTful em torno do engine nativo, com descoberta dinâmica de portas, persistência em SQLite e background worker thread.
 3. **Módulo de Workflows Tipado**: Abstrações padronizadas para pipelines `image_to_image` e `image_to_video`.
@@ -48,13 +48,13 @@ Este documento consolida a matriz SWOT profunda do estado atual e estabelece um 
 ### 2.1. Strengths (Forças)
 
 1. **Desacoplamento Arquitetural Real:**
-   - A substituição do Gradio por uma API REST em FastAPI (`facefusion/api/`) isola a interface gráfica da execução de deep learning, eliminando travamentos de UI causados por blocking calls na thread principal.
+   - A substituição do Gradio por uma API REST em FastAPI (`youface/api/`) isola a interface gráfica da execução de deep learning, eliminando travamentos de UI causados por blocking calls na thread principal.
 2. **Experiência do Usuário (Cockpit Cockpit & Design System):**
    - Interface escura de alto padrão visual com glassmorphism, feedback tátil via toasts assíncronos, métricas em tempo real de GPU (nome, uso, temperatura) e um reprodutor de vídeo com comparador deslizante de frames (slider vertical interativo de alta precisão).
 3. **Mapeamento Granular de Faces (Multi-Source Targeting):**
    - Capacidade de analisar todos os rostos do vídeo de destino (`/api/media/analyze-faces`), exibir thumbnails recortadas com bounding box, idade, gênero e raça, e permitir ao operador mapear individualmente qual foto de origem substituirá qual rosto específico.
 4. **Workflows Padronizados:**
-   - Módulos `image_to_image.py` e `image_to_video.py` bem estruturados sob o diretório `facefusion/workflows/`, centralizando medição percentual de progresso e manipulação de steps.
+   - Módulos `image_to_image.py` e `image_to_video.py` bem estruturados sob o diretório `youface/workflows/`, centralizando medição percentual de progresso e manipulação de steps.
 5. **Prevenção de Conflitos de Rede e Portas:**
    - O entrypoint `run_api.py` varre sockets sequencialmente (`find_free_port`) e injeta a URL ativa em `config.json` tanto em `public/` quanto em `out/`, viabilizando múltiplos containers ou execuções simultâneas sem colisões na porta 8000.
 6. **Proteção de Privacidade (Sanitização de PII):**
@@ -69,9 +69,9 @@ Este documento consolida a matriz SWOT profunda do estado atual e estabelece um 
 1. **Monólito no Código do Frontend (`page.tsx` com 2.443 linhas):**
    - Todo o sistema de toasts, modal de análise de rostos, slider de comparação de vídeo, gerenciador de presets com `localStorage`, formulário de upload, abas de configuração e cards de jobs residem em um único componente com mais de 50 hooks `useState`. Isso viola princípios básicos de manutenibilidade, dificulta code review e torna a aplicação propensa a re-renderizações desnecessárias.
 2. **Falta de Thread-Safety e Concorrência Global no Backend (`state_manager`):**
-   - O motor FaceFusion foi concebido como um script CLI com um dicionário global de estado (`state_manager.STATE_SET['cli']`). No backend FastAPI, endpoints como `POST /preview`, `POST /config` e `POST /media/analyze-faces` alteram diretamente esse dicionário global sem nenhum mecanismo de lock (`threading.Lock`). Se um usuário solicitar um preview enquanto um vídeo longo está sendo renderizado pelo worker em background, as variáveis `source_paths`, `target_path` e `processors` da renderização em curso serão sobrescritas no meio da execução.
+   - O motor YouFace foi concebido como um script CLI com um dicionário global de estado (`state_manager.STATE_SET['cli']`). No backend FastAPI, endpoints como `POST /preview`, `POST /config` e `POST /media/analyze-faces` alteram diretamente esse dicionário global sem nenhum mecanismo de lock (`threading.Lock`). Se um usuário solicitar um preview enquanto um vídeo longo está sendo renderizado pelo worker em background, as variáveis `source_paths`, `target_path` e `processors` da renderização em curso serão sobrescritas no meio da execução.
 3. **Inconsistência Crítica de Dependências (`requirements.txt` vs `pyproject.toml`):**
-   - `requirements.txt` lista apenas as dependências legadas do FaceFusion e **NÃO contém** `fastapi`, `uvicorn`, `sqlalchemy` ou `python-multipart`. Como o script oficial `install.py` lê `requirements.txt`, executar a instalação padrão quebra imediatamente a execução do backend (`run_api.py`).
+   - `requirements.txt` lista apenas as dependências legadas do YouFace e **NÃO contém** `fastapi`, `uvicorn`, `sqlalchemy` ou `python-multipart`. Como o script oficial `install.py` lê `requirements.txt`, executar a instalação padrão quebra imediatamente a execução do backend (`run_api.py`).
 4. **Docker Quebrado para o Frontend:**
    - `frontend/next.config.ts` está configurado com `output: "export"`. No entanto, `frontend/Dockerfile` roda `CMD ["npm", "run", "start"]`. No Next.js, `next start` falha categoricamente com exportações estáticas. O compose atual falha na inicialização do serviço `frontend`.
 5. **Polling HTTP Fixo e Ineficiente:**
@@ -98,14 +98,14 @@ Este documento consolida a matriz SWOT profunda do estado atual e estabelece um 
 5. **Modularização e Componentização do Frontend:**
    - Quebrar `page.tsx` em componentes atômicos (`VideoComparator`, `TargetFaceSelector`, `JobsList`, `SettingsTab`, `PresetsDropdown`, `ToastManager`) e hooks customizados (`useJobs`, `useHardwareTelemetry`, `usePresets`).
 6. **Controle Granular de Filas (Pause, Resume, Prioridade, Cancelamento):**
-   - Adicionar controle de prioridade e cancelamento graceful aproveitando `process_manager.stop()` do FaceFusion.
+   - Adicionar controle de prioridade e cancelamento graceful aproveitando `process_manager.stop()` do YouFace.
 
 ---
 
 ### 2.4. Threats (Ameaças)
 
-1. **Divergência Severa do Upstream (`facefusion/facefusion`):**
-   - O projeto base está nas versões `3.7.0` e `3.7.1`. O fork permanece na `3.6.1`. Quanto mais tempo passar sem a execução do playbook `UPSTREAM_MERGE.md`, maiores serão os conflitos de merge nos diretórios `facefusion/jobs/`, `processors/` e `choices.py`.
+1. **Divergência Severa do Upstream (`youface/youface`):**
+   - O projeto base está nas versões `3.7.0` e `3.7.1`. O fork permanece na `3.6.1`. Quanto mais tempo passar sem a execução do playbook `UPSTREAM_MERGE.md`, maiores serão os conflitos de merge nos diretórios `youface/jobs/`, `processors/` e `choices.py`.
 2. **Corrupção de Inferência por Concorrência:**
    - Em cenários multi-aba ou uso intenso, requisições concorrentes de preview e análise de face colidem no estado global e causam falhas silenciosas ou trocas incorretas de rostos.
 3. **Vulnerabilidade de Local File Inclusion / Leitura Arbitrária:**
@@ -181,7 +181,7 @@ gantt
 #### AÇÃO P0-3: Isolamento de Concorrência e Thread-Safety no `state_manager`
 - **Problema:** Chamadas de `POST /preview`, `POST /media/analyze-faces` e `POST /config` alteram `state_manager.set_item(...)` em tempo real, colidindo com jobs sendo executados pelo background worker.
 - **Passos de Implementação:**
-  1. Criar um context manager thread-safe para operações efêmeras em `facefusion/state_manager.py`:
+  1. Criar um context manager thread-safe para operações efêmeras em `youface/state_manager.py`:
      ```python
      import threading
      from contextlib import contextmanager
@@ -244,7 +244,7 @@ gantt
 - **Problema:** Impossível parar uma tarefa em andamento.
 - **Passos de Implementação:**
   1. Adicionar endpoint `POST /api/jobs/{job_id}/cancel`.
-  2. Integrar com o `process_manager.stop()` do FaceFusion.
+  2. Integrar com o `process_manager.stop()` do YouFace.
   3. No `worker.py`, checar periodicamente se o job atual teve solicitação de cancelamento:
      - Atualizar status no SQLite para `failed` com mensagem `"Cancelado pelo usuário"`.
      - Fazer limpeza dos arquivos temporários de frames parciais.
@@ -305,7 +305,7 @@ gantt
 - **Problema:** `config.json` grava `http://localhost:{port}`, impedindo acesso de outros dispositivos na rede local (LAN).
 - **Passos de Implementação:**
   1. No frontend, caso `apiUrl` não esteja definido ou seja `localhost`, utilizar caminhos relativos (`/api/...`) quando a página for servida na mesma origem, ou usar `window.location.hostname` com a porta descoberta.
-  2. No `run_api.py`, permitir o bind em `0.0.0.0` mediante parâmetro `--listen-all` ou variável de ambiente `FACEFUSION_HOST=0.0.0.0`.
+  2. No `run_api.py`, permitir o bind em `0.0.0.0` mediante parâmetro `--listen-all` ou variável de ambiente `YOUFACE_HOST=0.0.0.0`.
 - **Critério de Aceite:** Acessar a aplicação a partir de outro computador na rede (`http://192.168.x.x:8000`) permite visualização, uploads e processamento completo sem erros de CORS ou chamadas para o localhost do cliente.
 
 ---
@@ -317,13 +317,13 @@ gantt
 - **Passos de Implementação:**
   1. Configurar o remote upstream:
      ```bash
-     git remote add upstream https://github.com/facefusion/facefusion.git
+     git remote add upstream https://github.com/youface/youface.git
      git fetch upstream --tags
      ```
   2. Criar branch `merge/upstream-3.7.0` a partir da tag `3.7.0-my.1`.
   3. Realizar merge resolvendo conflitos especialmente em:
-     - `facefusion/choices.py` (manter validações de pre-check do fork).
-     - `facefusion/jobs/` (preservar separação modular do fork).
+     - `youface/choices.py` (manter validações de pre-check do fork).
+     - `youface/jobs/` (preservar separação modular do fork).
   4. Rodar a suíte completa de testes de regressão do CLI e da API.
   5. Gerar tag `3.7.0-my.2` ou `3.7.1-my.1`.
 - **Critério de Aceite:** Repositório atualizado com todas as correções do upstream sem perda das 16 funcionalidades proprietárias do fork.
@@ -362,7 +362,7 @@ gantt
 
 ## 5. Conclusão e Próximos Passos Recomendados
 
-O fork **faceYou** demonstrou um avanço de produto de altíssimo valor: transformar o FaceFusion de uma ferramenta técnica de linha de comando/Gradio para uma aplicação web moderna com experiência comparável a softwares comerciais de ponta.
+O fork **faceYou** demonstrou um avanço de produto de altíssimo valor: transformar o YouFace de uma ferramenta técnica de linha de comando/Gradio para uma aplicação web moderna com experiência comparável a softwares comerciais de ponta.
 
 Para consolidar essa vantagem competitiva e transformar o protótipo funcional em uma plataforma estável de produção, a recomendação prioritária é:
 1. **Executar imediatamente o Sprint P0** (Harmonização de dependências, Docker unificado e trava de concorrência).

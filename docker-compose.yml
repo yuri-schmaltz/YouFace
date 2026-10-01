@@ -5,12 +5,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: facefusion-backend
+    container_name: youface-backend
     ports:
       - "8000:8000"
     volumes:
       - .jobs:/app/.jobs
-      - /tmp/facefusion-test-examples:/tmp/facefusion-test-examples
+      - /tmp/youface-test-examples:/tmp/youface-test-examples
     deploy:
       resources:
         reservations:
@@ -24,7 +24,7 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: facefusion-frontend
+    container_name: youface-frontend
     ports:
       - "3000:3000"
     environment:

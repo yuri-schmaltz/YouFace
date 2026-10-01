@@ -27,8 +27,8 @@ Ten flagship features, each with documentation, tests, and admin endpoints. See 
 
 ### Fresh install
 ```bash
-git clone https://github.com/yuri-schmaltz/my-facefusion.git
-cd my-facefusion
+git clone https://github.com/yuri-schmaltz/my-youface.git
+cd my-youface
 git checkout 3.9.1-my.1
 python install.py default --skip-conda
 cd frontend && npm install && npm run build && cd ..
@@ -86,17 +86,17 @@ See [`docs/DOCKER_PROFILES.md`](docs/DOCKER_PROFILES.md) for the full reference.
 
 | Var | Default | Purpose |
 |---|---|---|
-| `FACEFUSION_API_TOKEN` | unset | Admin bearer token (existed before R7) |
-| `FACEFUSION_WEBHOOK_MAX_ATTEMPTS` | 5 | R8 — delivery retries |
-| `FACEFUSION_WEBHOOK_BACKOFF_BASE` | 1.0 | R8 — first retry delay (seconds) |
-| `FACEFUSION_WEBHOOK_TIMEOUT` | 10 | R8 — per-request timeout (seconds) |
+| `YOUFACE_API_TOKEN` | unset | Admin bearer token (existed before R7) |
+| `YOUFACE_WEBHOOK_MAX_ATTEMPTS` | 5 | R8 — delivery retries |
+| `YOUFACE_WEBHOOK_BACKOFF_BASE` | 1.0 | R8 — first retry delay (seconds) |
+| `YOUFACE_WEBHOOK_TIMEOUT` | 10 | R8 — per-request timeout (seconds) |
 
-The `FACEFUSION_EXECUTION_PROVIDERS` env var is now honoured by all compose profiles (see [DOCKER_PROFILES.md](docs/DOCKER_PROFILES.md)).
+The `YOUFACE_EXECUTION_PROVIDERS` env var is now honoured by all compose profiles (see [DOCKER_PROFILES.md](docs/DOCKER_PROFILES.md)).
 
 ## Migration notes
 
 - **Existing API clients:** No breaking changes. All new endpoints are additive.
-- **Existing tenants (single-user mode):** No `FACEFUSION_API_TOKEN` env var → auth stays disabled (backward compatible). Set the env var to opt into multi-tenant mode.
+- **Existing tenants (single-user mode):** No `YOUFACE_API_TOKEN` env var → auth stays disabled (backward compatible). Set the env var to opt into multi-tenant mode.
 - **Existing jobs:** Will gain nullable `webhook_url` / `tenant_id` columns on the next boot. Already-completed jobs are unaffected.
 - **Frontend:** The i18n module is opt-in. Old hard-coded strings still work; new components should use `useLocale()`.
 
@@ -105,11 +105,11 @@ The `FACEFUSION_EXECUTION_PROVIDERS` env var is now honoured by all compose prof
 - **Plugin entry-point scanning** does NOT detect plugins installed after the FastAPI app starts. Use `POST /api/admin/plugins/reload` to re-scan.
 - **Webhook dispatcher is synchronous.** For very high volume, replace with a queue (Celery/RQ/Arq) — the function shape stays the same.
 - **Training pipeline is a simplified prototype.** Not a full VAE like Faceswap — extracts and averages embeddings. Enough for "same celebrity across 1000 clips", not for "novel identity not in the embedding space".
-- **SimSwap backend is a stub.** Install with `pip install facefusion[simswap]` (extra in pyproject.toml, no wheel yet — see [DOCKER_PROFILES.md](docs/DOCKER_PROFILES.md)).
+- **SimSwap backend is a stub.** Install with `pip install youface[simswap]` (extra in pyproject.toml, no wheel yet — see [DOCKER_PROFILES.md](docs/DOCKER_PROFILES.md)).
 
 ## Acknowledgments
 
-- **FaceFusion upstream** for the engine.
+- **YouFace upstream** for the engine.
 - **Faceswap** for the SAE-style training inspiration (we ship the 80/20 version).
 - **SimSwap** for the high-fidelity pose handling (gated, not bundled).
 - **BHS Ultimate** for the head-swap concept.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script utilitário para limpar jobs stuck/orfãos do banco de dados do
-FaceFusion. Roda localmente; não precisa de venv especial.
+YouFace. Roda localmente; não precisa de venv especial.
 
 Uso:
     python scripts/clean_stuck_jobs.py [--dry-run] [--max-age-days N]
@@ -28,15 +28,15 @@ sys.path.insert(0, REPO_ROOT)
 
 # Defaults para o sys.path de imports acima
 try:
-    from facefusion.api.database import SessionLocal, JobModel
+    from youface.api.database import SessionLocal, JobModel
 except ImportError as e:
-    print(f"ERROR: cannot import facefusion.api.database: {e}")
+    print(f"ERROR: cannot import youface.api.database: {e}")
     print("Hint: rode do repo root com PYTHONPATH=. ou via venv que tenha instalado o projeto.")
     sys.exit(1)
 
 
 def parse_args() -> argparse.Namespace:
-    p = argparse.ArgumentParser(description="Limpa jobs stuck/orfãos do banco de dados do FaceFusion.")
+    p = argparse.ArgumentParser(description="Limpa jobs stuck/orfãos do banco de dados do YouFace.")
     p.add_argument("--dry-run", action="store_true", help="Não deleta, só mostra o que seria removido")
     p.add_argument("--max-age-days", type=int, default=1, help="Idade máxima em dias para considerar stuck (default: 1)")
     return p.parse_args()

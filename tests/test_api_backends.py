@@ -10,7 +10,7 @@ Covers:
 """
 import pytest
 
-from facefusion.api import backends as backends_mod
+from youface.api import backends as backends_mod
 
 
 @pytest.fixture(autouse=True)
@@ -141,7 +141,7 @@ def test_http_backends_list():
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
     app = FastAPI()
-    app.include_router(__import__("facefusion.api.routes.backends", fromlist=["router"]).router, prefix="/api")
+    app.include_router(__import__("youface.api.routes.backends", fromlist=["router"]).router, prefix="/api")
     with TestClient(app) as c:
         res = c.get("/api/backends")
         assert res.status_code == 200
@@ -156,7 +156,7 @@ def test_http_backend_detail_404():
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
     app = FastAPI()
-    app.include_router(__import__("facefusion.api.routes.backends", fromlist=["router"]).router, prefix="/api")
+    app.include_router(__import__("youface.api.routes.backends", fromlist=["router"]).router, prefix="/api")
     with TestClient(app) as c:
         res = c.get("/api/backends/ghost")
         assert res.status_code == 404
@@ -166,7 +166,7 @@ def test_http_backend_active_loads():
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
     app = FastAPI()
-    app.include_router(__import__("facefusion.api.routes.backends", fromlist=["router"]).router, prefix="/api")
+    app.include_router(__import__("youface.api.routes.backends", fromlist=["router"]).router, prefix="/api")
     with TestClient(app) as c:
         res = c.get("/api/backends/insightface/active")
         assert res.status_code == 200
@@ -177,7 +177,7 @@ def test_http_backend_active_503_for_unavailable():
     from fastapi import FastAPI
     from fastapi.testclient import TestClient
     app = FastAPI()
-    app.include_router(__import__("facefusion.api.routes.backends", fromlist=["router"]).router, prefix="/api")
+    app.include_router(__import__("youface.api.routes.backends", fromlist=["router"]).router, prefix="/api")
     with TestClient(app) as c:
         res = c.get("/api/backends/simswap/active")
         assert res.status_code == 503

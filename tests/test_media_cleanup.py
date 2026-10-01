@@ -25,8 +25,8 @@ def _load_cleanup_logic():
     R2: a função continua em _legacy_routes.py (não foi migrada ainda).
     """
     candidates = [
-        Path(__file__).parent.parent / "facefusion" / "api" / "_legacy_routes.py",
-        Path(__file__).parent.parent / "facefusion" / "api" / "routes.py",
+        Path(__file__).parent.parent / "youface" / "api" / "_legacy_routes.py",
+        Path(__file__).parent.parent / "youface" / "api" / "routes.py",
     ]
     for routes_path in candidates:
         if not routes_path.exists():

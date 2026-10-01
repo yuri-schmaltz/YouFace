@@ -1,7 +1,7 @@
 import os
 import tempfile
 
-from facefusion.json import read_json, write_json
+from youface.json import read_json, write_json
 
 
 def test_read_json() -> None:

@@ -22,8 +22,8 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=compute,utility
-      # Tell facefusion to use the CUDA onnxruntime
-      - FACEFUSION_EXECUTION_PROVIDERS=cuda
+      # Tell youface to use the CUDA onnxruntime
+      - YOUFACE_EXECUTION_PROVIDERS=cuda
 
   frontend:
     # Frontend has no GPU dependency — pass through.

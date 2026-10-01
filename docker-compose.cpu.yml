@@ -20,9 +20,9 @@ services:
           cpus: '4.0'
           memory: 8G
     environment:
-      - FACEFUSION_EXECUTION_PROVIDERS=cpu
+      - YOUFACE_EXECUTION_PROVIDERS=cpu
       # Reduce thread count to avoid contention on shared CI runners.
-      - FACEFUSION_EXECUTION_THREAD_COUNT=2
+      - YOUFACE_EXECUTION_THREAD_COUNT=2
 
   frontend:
     environment:

@@ -33,5 +33,5 @@ repos:
     rev: 7.0.0
     hooks:
       - id: flake8
-        files: '^facefusion/.*\.py$|^tests/.*\.py$|^run_api\.py$|^install\.py$'
+        files: '^youface/.*\.py$|^tests/.*\.py$|^run_api\.py$|^install\.py$'
         args: ['--max-line-length=120', '--extend-ignore=E203,W503,E501']

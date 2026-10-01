@@ -1,4 +1,4 @@
-from facefusion.sanitizer import sanitize_int_range
+from youface.sanitizer import sanitize_int_range
 
 
 def test_sanitize_int_range() -> None:

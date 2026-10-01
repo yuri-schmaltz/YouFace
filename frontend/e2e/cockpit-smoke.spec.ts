@@ -17,7 +17,7 @@ test.describe("Cockpit smoke", () => {
     await page.goto("/");
 
     // O cockpit renderiza o título/branding
-    await expect(page).toHaveTitle(/FaceFusion|YouFace/i, { timeout: 15_000 });
+    await expect(page).toHaveTitle(/YouFace|YouFace/i, { timeout: 15_000 });
 
     // O status bar mostra "Engine:" (Online ou Offline)
     await expect(page.locator("text=Engine:").first()).toBeVisible({ timeout: 10_000 });

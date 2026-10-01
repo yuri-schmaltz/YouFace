@@ -1,4 +1,4 @@
-from facefusion.common_helper import calculate_float_step, calculate_int_step, create_float_metavar, create_float_range, create_int_metavar, create_int_range, get_middle
+from youface.common_helper import calculate_float_step, calculate_int_step, create_float_metavar, create_float_range, create_int_metavar, create_int_range, get_middle
 
 
 def test_create_int_metavar() -> None:

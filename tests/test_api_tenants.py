@@ -5,7 +5,7 @@ Covers:
 - Tenant CRUD (create/list/get/disable/enable/rotate)
 - Quota ledger (record, retrieve, remaining)
 - API key hashing (raw key only returned once)
-- Admin endpoints require the FACEFUSION_API_TOKEN or admin tenant
+- Admin endpoints require the YOUFACE_API_TOKEN or admin tenant
 - Disabled tenants cannot authenticate
 - Non-admin tenants cannot hit admin endpoints
 
@@ -20,8 +20,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from facefusion.api.database import Base
-from facefusion.api import tenants as tenants_mod
+from youface.api.database import Base
+from youface.api import tenants as tenants_mod
 
 
 # --- isolated in-memory DB ---------------------------------------------------
@@ -195,8 +195,8 @@ def http_client(isolated_engine):
     use the test DB.
     """
     from fastapi.testclient import TestClient
-    from facefusion.api.main import app
-    from facefusion.api.database import get_db
+    from youface.api.main import app
+    from youface.api.database import get_db
 
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=isolated_engine)
 
@@ -209,7 +209,7 @@ def http_client(isolated_engine):
 
     # Use patches so both admin endpoints and TenantMiddleware hit our DB.
     # The admin routes import helpers (create_tenant, etc.) directly from
-    # facefusion.api.tenants, so a single patch on that module covers all
+    # youface.api.tenants, so a single patch on that module covers all
     # of them. The middleware also imports get_tenant_by_key from there.
     with patch.object(tenants_mod, "SessionLocal", SessionLocal), \
          patch.object(tenants_mod, "ensure_tenant_tables", lambda: None):
@@ -218,7 +218,7 @@ def http_client(isolated_engine):
         app.dependency_overrides[get_db] = override_get_db
         # Disable bearer auth so anonymous endpoints respond.
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("FACEFUSION_API_TOKEN", None)
+            os.environ.pop("YOUFACE_API_TOKEN", None)
             with TestClient(app) as c:
                 yield c
         app.dependency_overrides.clear()
@@ -231,8 +231,8 @@ def test_admin_create_requires_admin_token(http_client):
 
 
 def test_admin_create_with_env_token(http_client):
-    """FACEFUSION_API_TOKEN as bearer grants admin."""
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "secret123"}):
+    """YOUFACE_API_TOKEN as bearer grants admin."""
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "secret123"}):
         res = http_client.post(
             "/api/admin/tenants",
             json={"name": "first"},
@@ -246,7 +246,7 @@ def test_admin_create_with_env_token(http_client):
 
 
 def test_admin_create_duplicate_returns_409(http_client):
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "secret123"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "secret123"}):
         http_client.post(
             "/api/admin/tenants",
             json={"name": "dup"},
@@ -261,7 +261,7 @@ def test_admin_create_duplicate_returns_409(http_client):
 
 
 def test_admin_list(http_client):
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         http_client.post("/api/admin/tenants", json={"name": "a"}, headers={"Authorization": "Bearer admin"})
         http_client.post("/api/admin/tenants", json={"name": "b"}, headers={"Authorization": "Bearer admin"})
         res = http_client.get("/api/admin/tenants", headers={"Authorization": "Bearer admin"})
@@ -271,7 +271,7 @@ def test_admin_list(http_client):
 
 
 def test_admin_rotate_returns_new_key(http_client):
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         c = http_client.post("/api/admin/tenants", json={"name": "rot"}, headers={"Authorization": "Bearer admin"}).json()
         tid = c["tenant"]["id"]
         old_key = c["api_key"]
@@ -283,7 +283,7 @@ def test_admin_rotate_returns_new_key(http_client):
 def test_tenant_x_api_key_authenticates(http_client):
     """After creation, the new tenant's X-API-Key identifies the caller
     and the response carries X-Tenant-Id + X-RateLimit-* headers."""
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         c = http_client.post("/api/admin/tenants", json={"name": "authed"}, headers={"Authorization": "Bearer admin"}).json()
         key = c["api_key"]
     res = http_client.get("/api/admin/usage", headers={"X-API-Key": key})
@@ -294,7 +294,7 @@ def test_tenant_x_api_key_authenticates(http_client):
 
 
 def test_disabled_tenant_loses_authentication(http_client):
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         c = http_client.post("/api/admin/tenants", json={"name": "killme"}, headers={"Authorization": "Bearer admin"}).json()
         tid = c["tenant"]["id"]
         key = c["api_key"]
@@ -307,7 +307,7 @@ def test_disabled_tenant_loses_authentication(http_client):
 def test_non_admin_tenant_cannot_create_others(http_client):
     """A non-admin tenant can hit /admin/usage for themselves but NOT
     POST /admin/tenants."""
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         c = http_client.post(
             "/api/admin/tenants",
             json={"name": "regular", "is_admin": False},
@@ -324,7 +324,7 @@ def test_non_admin_tenant_cannot_create_others(http_client):
 
 def test_quota_headers_unlimited_tenant(http_client):
     """If a tenant has -1 quota, X-RateLimit-Remaining is 'unlimited'."""
-    with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin"}):
+    with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin"}):
         c = http_client.post(
             "/api/admin/tenants",
             json={"name": "free", "monthly_quota_minutes": -1},

@@ -22,35 +22,35 @@ Only 2 manual conflicts out of 79 changed files:
 
 | File | Fork side | Resolution |
 |---|---|---|
-| `facefusion/metadata.py` | `'version': '3.8.2-my.1'` | Bumped to `'3.8.3-my.1'` (fork identity preserved) |
+| `youface/metadata.py` | `'version': '3.8.2-my.1'` | Bumped to `'3.8.3-my.1'` (fork identity preserved) |
 | `requirements.txt` | Poetry-pinned | Fork wins (Poetry is the source of truth; installer overrides onnxruntime anyway) |
 
 The remaining 77 files merged automatically. Notable points:
 
-- **`facefusion/workflows/core.py`**: upstream version (canonical). The
+- **`youface/workflows/core.py`**: upstream version (canonical). The
   fork's pre-existing version was 90% identical; differences were in
   `conditional_get_target_vision_frames` (upstream adds `detect_video_fps`,
   `resolve_extract_frame_number`, `resolve_target_frame_number` plumbing).
-  These functions also exist in upstream's `facefusion/vision.py`, which
+  These functions also exist in upstream's `youface/vision.py`, which
   merged cleanly.
 
-- **`facefusion/vision.py`**, **`facefusion/video_manager.py`**,
-  **`facefusion/types.py`**: significant upstream expansion (+82, +151, +112
+- **`youface/vision.py`**, **`youface/video_manager.py`**,
+  **`youface/types.py`**: significant upstream expansion (+82, +151, +112
   LoC respectively). All additive; no fork code removed.
 
-- **`facefusion/uis/*`**: upstream refactored the Gradio UI. Fork doesn't
+- **`youface/uis/*`**: upstream refactored the Gradio UI. Fork doesn't
   use Gradio (web cockpit replaces it), so changes passed through cleanly.
 
-- **`facefusion/installer.py`**: minor update; still respects the CLI-arg
+- **`youface/installer.py`**: minor update; still respects the CLI-arg
   flavor selection. No conflict with fork.
 
-- **`facefusion/processors/modules/*`**: small refactors upstream; fork
+- **`youface/processors/modules/*`**: small refactors upstream; fork
   doesn't touch these files. Merged cleanly.
 
 ## Smoke test results
 
 - All modified Python files parse cleanly (`ast.parse` ✓).
-- `facefusion.metadata` reports `3.8.3-my.1` (✓).
+- `youface.metadata` reports `3.8.3-my.1` (✓).
 - Pure-Python modules (`common_helper`, `installer`, `hash_helper`, `metadata`)
   import without errors in clean venv.
 - Modules requiring `cv2` / `numpy` / `onnxruntime` need full install (CI will
@@ -59,7 +59,7 @@ The remaining 77 files merged automatically. Notable points:
 ## Validation pending
 
 - [ ] `pytest tests/` in clean venv (needs full Poetry install)
-- [ ] `python facefusion.py job-list` (CLI smoke)
+- [ ] `python youface.py job-list` (CLI smoke)
 - [ ] `python run_api.py` + `curl http://127.0.0.1:8000/api/hardware/devices`
 - [ ] CI green: lint + frontend-check + test + api-tests
 

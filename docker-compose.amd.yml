@@ -10,7 +10,7 @@ version: '3.8'
 #
 # NOTE: ROCm support in onnxruntime is shipped as the
 # 'onnxruntime-rocm' pip package. The Dockerfile must install that
-# flavor; the upstream installer (facefusion/installer.py) detects
+# flavor; the upstream installer (youface/installer.py) detects
 # AMD GPUs and selects the right wheel automatically.
 
 services:
@@ -23,7 +23,7 @@ services:
       - render
     environment:
       - HSA_OVERRIDE_GFX_VERSION=10.3.0  # adjust for your GPU; this is a common default
-      - FACEFUSION_EXECUTION_PROVIDERS=rocm
+      - YOUFACE_EXECUTION_PROVIDERS=rocm
 
   frontend:
     environment:

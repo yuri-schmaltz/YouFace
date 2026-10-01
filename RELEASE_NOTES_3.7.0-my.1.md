@@ -13,7 +13,7 @@ This is the **first tagged release of this fork**. It bundles the upstream
 engine at `3.6.1` with 16 fork-specific commits that add:
 
 1. A **decoupled Next.js 16 web cockpit** in `frontend/`
-2. A **FastAPI backend** in `facefusion/api/`
+2. A **FastAPI backend** in `youface/api/`
 3. A new **workflows module** (`image_to_image`, `image_to_video`)
 4. **Multi-source face selection** with granular target-face mapping
 5. **Real-time job progress** tracking in the API and the UI
@@ -32,8 +32,8 @@ For the per-commit breakdown see [`CHANGELOG.md`](CHANGELOG.md).
 
 ### Fresh install
 ```bash
-git clone https://github.com/yuri-schmaltz/my-facefusion.git
-cd my-facefusion
+git clone https://github.com/yuri-schmaltz/my-youface.git
+cd my-youface
 git checkout 3.7.0-my.1
 python install.py
 cd frontend && npm install && npm run build && cd ..
@@ -49,7 +49,7 @@ cd frontend && npm install && npm run build && cd ..
 ```
 
 > If you were running the legacy CLI only, no frontend rebuild is required —
-> `python facefusion.py …` still works exactly as before.
+> `python youface.py …` still works exactly as before.
 
 ---
 
@@ -69,5 +69,5 @@ cd frontend && npm install && npm run build && cd ..
 
 ## Credits
 
-- Upstream engine: [facefusion/facefusion](https://github.com/facefusion/facefusion)
+- Upstream engine: [youface/youface](https://github.com/youface/youface)
 - Fork maintainer: [@yuri-schmaltz](https://github.com/yuri-schmaltz)

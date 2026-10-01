@@ -2,7 +2,7 @@
 Tests for automatic job quality metrics (R10 of gauntlet).
 
 Covers the pure-math helpers and the high-level compute_job_metrics.
-The facefusion integration itself is mocked because we don't have a
+The youface integration itself is mocked because we don't have a
 GPU in CI; the worker calls compute_job_metrics with embeddings
 extracted from the actual swap.
 """
@@ -14,7 +14,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from facefusion.api import metrics as metrics_mod
+from youface.api import metrics as metrics_mod
 
 
 # ---------------------------------------------------------------------------
@@ -189,7 +189,7 @@ def test_compute_job_metrics_all_empty():
 def isolated_metrics_db(tmp_path):
     db_path = tmp_path / "metrics.db"
     engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False}, poolclass=StaticPool)
-    from facefusion.api.database import Base
+    from youface.api.database import Base
     Base.metadata.create_all(bind=engine)
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     with patch.object(metrics_mod, "SessionLocal", SessionLocal):

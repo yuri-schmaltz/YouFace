@@ -28,5 +28,5 @@ if __name__ == '__main__':
 		sys.exit(wrapper.main(args))
 	else:
 		# Caminho legacy — passa direto para o upstream.
-		from facefusion import installer
+		from youface import installer
 		installer.cli()

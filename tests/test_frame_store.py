@@ -1,9 +1,9 @@
 import pytest
 
-from facefusion import process_manager
-from facefusion.download import conditional_download
-from facefusion.frame_store import clear_frames, get_frame_store, reduce_frames, select_frame_set, set_frame
-from facefusion.vision import read_video_frame
+from youface import process_manager
+from youface.download import conditional_download
+from youface.frame_store import clear_frames, get_frame_store, reduce_frames, select_frame_set, set_frame
+from youface.vision import read_video_frame
 from .helper import get_test_example_file, get_test_examples_directory
 
 

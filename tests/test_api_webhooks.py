@@ -20,7 +20,7 @@ from unittest.mock import patch
 
 import pytest
 
-from facefusion.api import webhooks as webhooks_mod
+from youface.api import webhooks as webhooks_mod
 
 
 # ---------------------------------------------------------------------------
@@ -124,7 +124,7 @@ def consumer_server():
 def isolated_webhook_db(tmp_path):
     """Point webhooks.SessionLocal at a private SQLite file per test.
 
-    The global SessionLocal from facefusion.api.database is shared across
+    The global SessionLocal from youface.api.database is shared across
     modules and accumulates state across tests. For webhook tests we want
     a clean slate: separate file, ensure tables, then restore the global.
     """
@@ -139,7 +139,7 @@ def isolated_webhook_db(tmp_path):
         poolclass=StaticPool,
     )
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-    from facefusion.api.database import Base
+    from youface.api.database import Base
     Base.metadata.create_all(bind=engine)
 
     with patch.object(webhooks_mod, "SessionLocal", SessionLocal):
@@ -317,19 +317,19 @@ def test_list_deliveries_filter_by_status(consumer_server):
 
 @pytest.fixture
 def admin_client(tmp_path):
-    """A TestClient with FACEFUSION_API_TOKEN set + admin auth header.
+    """A TestClient with YOUFACE_API_TOKEN set + admin auth header.
 
     No real webhook deliveries — the admin tests insert rows directly
     via webhooks_mod.record_delivery, then hit the admin endpoint.
     """
     from fastapi.testclient import TestClient
-    from facefusion.api.main import app
-    from facefusion.api import tenants as tenants_mod
-    from facefusion.api import webhooks as wh_mod
+    from youface.api.main import app
+    from youface.api import tenants as tenants_mod
+    from youface.api import webhooks as wh_mod
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.pool import StaticPool
-    from facefusion.api.database import Base, get_db
+    from youface.api.database import Base, get_db
 
     db_path = tmp_path / "admin.db"
     engine = create_engine(
@@ -352,22 +352,22 @@ def admin_client(tmp_path):
          patch.object(tenants_mod, "SessionLocal", SessionLocal), \
          patch.object(tenants_mod, "ensure_tenant_tables", lambda: None):
         app.dependency_overrides[get_db] = override_get_db
-        with patch.dict(os.environ, {"FACEFUSION_API_TOKEN": "admin-token"}):
+        with patch.dict(os.environ, {"YOUFACE_API_TOKEN": "admin-token"}):
             with TestClient(app) as c:
                 yield c, SessionLocal, "Bearer admin-token"
         app.dependency_overrides.clear()
 
 
 def test_admin_webhook_list_requires_auth(tmp_path):
-    """No FACEFUSION_API_TOKEN + no admin tenant → 403."""
+    """No YOUFACE_API_TOKEN + no admin tenant → 403."""
     from fastapi.testclient import TestClient
-    from facefusion.api.main import app
-    from facefusion.api import tenants as tenants_mod
-    from facefusion.api import webhooks as wh_mod
+    from youface.api.main import app
+    from youface.api import tenants as tenants_mod
+    from youface.api import webhooks as wh_mod
     from sqlalchemy import create_engine
     from sqlalchemy.orm import sessionmaker
     from sqlalchemy.pool import StaticPool
-    from facefusion.api.database import Base, get_db
+    from youface.api.database import Base, get_db
 
     db_path = tmp_path / "noauth.db"
     engine = create_engine(f"sqlite:///{db_path}", connect_args={"check_same_thread": False}, poolclass=StaticPool)
@@ -387,7 +387,7 @@ def test_admin_webhook_list_requires_auth(tmp_path):
          patch.object(tenants_mod, "ensure_tenant_tables", lambda: None):
         app.dependency_overrides[get_db] = override_get_db
         with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop("FACEFUSION_API_TOKEN", None)
+            os.environ.pop("YOUFACE_API_TOKEN", None)
             with TestClient(app) as c:
                 res = c.get("/api/admin/webhooks")
                 assert res.status_code == 403

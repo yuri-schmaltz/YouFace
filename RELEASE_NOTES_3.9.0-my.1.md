@@ -40,12 +40,12 @@ backend on real hardware (RTX 3060, driver 595, CUDA 13.2).
 
 ### Headline changes from upstream 3.9.0 (the merge)
 
-- **`facefusion/face_landmarker.py` expanded (+84 LoC).** Adds voice
+- **`youface/face_landmarker.py` expanded (+84 LoC).** Adds voice
   extractor integration support.
 - **Voice extractor loaded in face swapper processor.** The
-  `facefusion/processors/modules/face_swapper/core.py` now loads the
+  `youface/processors/modules/face_swapper/core.py` now loads the
   voice extractor module alongside the face swapper model.
-- **Types/touch-ups.** `facefusion/types.py` and a few other modules
+- **Types/touch-ups.** `youface/types.py` and a few other modules
   got small type adjustments to accommodate the new integration.
 
 For the per-commit breakdown see [`CHANGELOG.md`](CHANGELOG.md).
@@ -56,8 +56,8 @@ For the per-commit breakdown see [`CHANGELOG.md`](CHANGELOG.md).
 
 ### Fresh install
 ```bash
-git clone https://github.com/yuri-schmaltz/my-facefusion.git
-cd my-facefusion
+git clone https://github.com/yuri-schmaltz/my-youface.git
+cd my-youface
 git checkout 3.9.0-my.1
 python install.py default --skip-conda
 cd frontend && npm install && npm run build && cd ..
@@ -73,7 +73,7 @@ cd frontend && npm install && npm run build && cd ..
 ```
 
 > If you were running the legacy CLI only, no rebuild is required —
-> `python facefusion.py …` still works exactly as before.
+> `python youface.py …` still works exactly as before.
 
 ---
 
@@ -94,5 +94,5 @@ cd frontend && npm install && npm run build && cd ..
 
 ## Credits
 
-- Upstream engine: [facefusion/facefusion](https://github.com/facefusion/facefusion) @ `3.9.0` (`6b318a9`)
+- Upstream engine: [youface/youface](https://github.com/youface/youface) @ `3.9.0` (`6b318a9`)
 - Fork maintainer: [@yuri-schmaltz](https://github.com/yuri-schmaltz)

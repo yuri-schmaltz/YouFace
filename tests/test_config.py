@@ -1,11 +1,11 @@
 import pytest
 
-from facefusion import config, state_manager
+from youface import config, state_manager
 
 
 @pytest.fixture(scope = 'module', autouse = True)
 def before_all() -> None:
-	state_manager.init_item('config_path', 'facefusion.ini')
+	state_manager.init_item('config_path', 'youface.ini')
 	config_parser = config.get_static_config_parser()
 	config_parser.read_dict(
 	{

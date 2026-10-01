@@ -3,13 +3,13 @@ import tempfile
 import numpy
 import pytest
 
-from facefusion import ffmpeg, ffmpeg_builder, process_manager, state_manager
-from facefusion.common_helper import is_linux, is_macos, is_windows
-from facefusion.download import conditional_download
-from facefusion.ffprobe import extract_video_metadata
-from facefusion.frame_store import get_frame_store
-from facefusion.temp_helper import create_temp_directory, get_temp_file_path
-from facefusion.video_manager import clear_video_pool, close_video_reader, close_video_writer, collect_video_frames, conditional_seek_video_reader, drain_video_reader, get_reader, get_writer, read_video_frame, read_video_frames, seek_video_reader, write_video_frame
+from youface import ffmpeg, ffmpeg_builder, process_manager, state_manager
+from youface.common_helper import is_linux, is_macos, is_windows
+from youface.download import conditional_download
+from youface.ffprobe import extract_video_metadata
+from youface.frame_store import get_frame_store
+from youface.temp_helper import create_temp_directory, get_temp_file_path
+from youface.video_manager import clear_video_pool, close_video_reader, close_video_writer, collect_video_frames, conditional_seek_video_reader, drain_video_reader, get_reader, get_writer, read_video_frame, read_video_frames, seek_video_reader, write_video_frame
 from .helper import get_test_example_file, get_test_examples_directory
 
 

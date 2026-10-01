@@ -1,9 +1,9 @@
 # Upstream Merge Playbook
 
 This document is the operational runbook for bringing new upstream
-[facefusion/facefusion](https://github.com/facefusion/facefusion) releases
-into this fork without losing the fork-specific work in `facefusion/api/`,
-`facefusion/workflows/`, `frontend/`, and the docs in `docs/goal/`.
+[youface/youface](https://github.com/youface/youface) releases
+into this fork without losing the fork-specific work in `youface/api/`,
+`youface/workflows/`, `frontend/`, and the docs in `docs/goal/`.
 
 > **TL;DR:** Use a dedicated branch per upstream release, merge the upstream
 > tag, resolve conflicts, run the test suite, then tag a new
@@ -15,8 +15,8 @@ into this fork without losing the fork-specific work in `facefusion/api/`,
 
 ```bash
 git remote -v                         # check current remotes
-git remote add upstream https://github.com/facefusion/facefusion.git 2>/dev/null \
-  || git remote set-url upstream https://github.com/facefusion/facefusion.git
+git remote add upstream https://github.com/youface/youface.git 2>/dev/null \
+  || git remote set-url upstream https://github.com/youface/youface.git
 git fetch --tags upstream
 ```
 
@@ -41,13 +41,13 @@ git merge --no-ff upstream/3.7.0 -m "merge upstream 3.7.0"
 If there are conflicts, work through them in this order (most → least
 likely to conflict):
 
-1. `facefusion/uis/` — the legacy Gradio UI; we did not touch it but the
+1. `youface/uis/` — the legacy Gradio UI; we did not touch it but the
    upstream usually does.
-2. `facefusion/jobs/` (we split this out of `facefusion/jobs.py`) — both
+2. `youface/jobs/` (we split this out of `youface/jobs.py`) — both
    sides refactored this area in `3.6.x` and `3.7.x`.
-3. `facefusion/choices.py` — we added the processor pre-check; upstream
+3. `youface/choices.py` — we added the processor pre-check; upstream
    occasionally adds new processor choices too.
-4. `facefusion/processors/frame_enhancer.py` and the rest of the
+4. `youface/processors/frame_enhancer.py` and the rest of the
    `processors/` package — usually conflict-free, but check.
 5. `requirements.txt` — accept the upstream version, then re-add any
    fork-only dependency (`uvicorn`, `fastapi`, `sqlalchemy`, etc.) that
@@ -59,8 +59,8 @@ likely to conflict):
 
 ```bash
 # Python engine CLI (legacy path)
-python facefusion.py --help
-python facefusion.py job-list
+python youface.py --help
+python youface.py job-list
 
 # API + frontend boot
 cd frontend && npm install && npm run build && cd ..
@@ -80,13 +80,13 @@ and re-run.
 ## 5. Tag the new fork release
 
 ```bash
-# Bump the version in facefusion/__init__.py
+# Bump the version in youface/__init__.py
 #   version = "3.7.0-my.2"
-git add facefusion/__init__.py
+git add youface/__init__.py
 git commit -m "chore: bump fork version to 3.7.0-my.2"
 
 # Tag & push
-git tag -a 3.7.0-my.2 -m "FaceFusion fork 3.7.0-my.2 — merged upstream 3.7.0"
+git tag -a 3.7.0-my.2 -m "YouFace fork 3.7.0-my.2 — merged upstream 3.7.0"
 git push origin merge/upstream-3.7.0
 git push origin 3.7.0-my.2
 ```

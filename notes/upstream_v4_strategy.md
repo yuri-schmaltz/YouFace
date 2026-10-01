@@ -41,25 +41,25 @@ git tag upstream-v4 v4-tag-sha
 git merge --no-ff upstream-v4 -m "merge upstream v4 (P3-1)"
 
 # 3. Expected high-conflict zones
-#    - facefusion/api/ — upstream introduces websocket store, our fork
+#    - youface/api/ — upstream introduces websocket store, our fork
 #      already has SSE in useJobs. Decide: keep both? wire them together?
-#    - facefusion/jobs/ — upstream may restructure; fork has api/jobs/
-#    - facefusion/upload — upstream adds restrictions; fork has open
+#    - youface/jobs/ — upstream may restructure; fork has api/jobs/
+#    - youface/upload — upstream adds restrictions; fork has open
 #      uploads in /api/media/upload
 ```
 
 ### Conflict resolution order
 
-1. `facefusion/installer.py` — accept upstream (CLI tool)
-2. `facefusion/processors/modules/*` — accept upstream
-3. `facefusion/api/*` — **manual resolution required**. Decide:
+1. `youface/installer.py` — accept upstream (CLI tool)
+2. `youface/processors/modules/*` — accept upstream
+3. `youface/api/*` — **manual resolution required**. Decide:
    - Keep our SSE + useJobs, or migrate to upstream's websocket store?
    - Keep our atomic JSON writes, or switch to upstream's new pattern?
-4. `facefusion/api/routes.py` — merge carefully; the new upload
+4. `youface/api/routes.py` — merge carefully; the new upload
    restrictions will need to be configured for the fork's use case
 5. `requirements.txt` — keep fork (Poetry is source of truth)
 6. `pyproject.toml` — keep fork (Poetry is source of truth)
-7. `facefusion/metadata.py` — fork wins, bump version
+7. `youface/metadata.py` — fork wins, bump version
 
 ### Post-merge
 
@@ -91,12 +91,12 @@ git push origin master
    - **Use only WebSocket:** simpler, single transport
 
 2. **Session management.** Upstream adds CLI session observation +
-   teardown. Our fork's CLI (facefusion.py) doesn't have sessions
+   teardown. Our fork's CLI (youface.py) doesn't have sessions
    yet — easy adoption. Our FastAPI worker has job lifecycle, but
    no user sessions. **Impact: low.**
 
 3. **Upload restrictions.** Upstream is working on this; will likely
-   require configuration via `facefusion.ini` plus a new env var for
+   require configuration via `youface.ini` plus a new env var for
    the fork. **Impact: medium** — may break the open `/api/media/upload`
    endpoint.
 

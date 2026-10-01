@@ -1,13 +1,13 @@
 import numpy
 import pytest
 
-from facefusion import face_classifier, face_detector, face_landmarker, face_recognizer, state_manager
-from facefusion.common_helper import get_first, get_last
-from facefusion.download import conditional_download
-from facefusion.face_creator import get_many_faces, get_one_face
-from facefusion.face_store import clear_faces
-from facefusion.face_tracker import create_face_tracks, select_face_track, track_faces
-from facefusion.vision import read_static_video_frame, select_video_frames
+from youface import face_classifier, face_detector, face_landmarker, face_recognizer, state_manager
+from youface.common_helper import get_first, get_last
+from youface.download import conditional_download
+from youface.face_creator import get_many_faces, get_one_face
+from youface.face_store import clear_faces
+from youface.face_tracker import create_face_tracks, select_face_track, track_faces
+from youface.vision import read_static_video_frame, select_video_frames
 from .helper import get_test_example_file, get_test_examples_directory
 
 

@@ -33,7 +33,7 @@ export function useDiagnosticActions(options: UseDiagnosticActionsOptions): UseD
 
   const handleExportDiagnostic = useCallback(() => {
     const url = formatApiUrl(apiUrl, "/api/diagnostic/export");
-    triggerDownload(url, "facefusion_diagnostic.zip");
+    triggerDownload(url, "youface_diagnostic.zip");
     showToast("info", "Diagnóstico", "Download do pacote de logs iniciado.");
   }, [apiUrl, showToast, triggerDownload]);
 
@@ -43,7 +43,7 @@ export function useDiagnosticActions(options: UseDiagnosticActionsOptions): UseD
         showToast("error", "Sem saída", "Nenhum arquivo de saída disponível para download.");
         return;
       }
-      triggerDownload(previewOutputUrl, "facefusion_output");
+      triggerDownload(previewOutputUrl, "youface_output");
       showToast("info", "Download", "Arquivo sendo transferido.");
     },
     [showToast, triggerDownload],

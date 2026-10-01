@@ -115,7 +115,7 @@ export const NewProjectModal: React.FC<NewProjectModalProps> = ({
                 Criar Novo Projeto
               </h2>
               <p className="text-xs text-zinc-400">
-                Configure os parâmetros iniciais para criar a pasta em <span className="font-mono text-zinc-300">~/Vídeos/FaceFusion_Projects</span>.
+                Configure os parâmetros iniciais para criar a pasta em <span className="font-mono text-zinc-300">~/Vídeos/YouFace_Projects</span>.
               </p>
             </div>
           </div>

@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from facefusion.time_helper import describe_time_ago
+from youface.time_helper import describe_time_ago
 
 
 def get_time_ago(days : int, hours : int, minutes : int) -> datetime:

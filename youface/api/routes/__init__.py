@@ -1,0 +1,75 @@
+"""
+API routes package.
+
+The thick route definitions live in `youface/api/_legacy_routes.py`
+(pre-R2 monolithic file with 21 routes). This package split extracts
+domain-specific submodules from it; for now only `projects` is migrated,
+and the rest is re-exported from the legacy module so existing
+imports (`from youface.api.routes import router`) keep working.
+
+R2 status: 1 of 8 routes extracted (projects). The remaining media,
+jobs, diagnostic, preview, video routes are still in _legacy_routes.py.
+R2 followups will move them incrementally.
+
+Submodules:
+- hardware: GPU/CPU/RAM telemetry and provider enumeration
+- config:   system config GET/POST
+- common:   internal helpers (validate_safe_path, get_allowed_directories)
+- projects: list, create, open-folder, delete  [R2 migrated]
+"""
+from youface.api._legacy_routes import (
+    router,
+    model_download_state,
+    download_thread,
+    # Pydantic models re-exported in case tests import them from this path
+    DownloadModelsRequest,
+    ConfigUpdateRequest,
+    JobCreateRequest,
+    FaceMapping,
+    FaceAnalyzeRequest,
+)
+# ProjectCreateInput lives in the projects submodule (migrated in R2).
+from youface.api.routes.projects import ProjectCreateInput
+
+# Re-export sub-routers so callers can mount them individually if needed
+from youface.api.routes import projects as _projects  # noqa: E402
+from youface.api.routes import hardware as _hardware  # noqa: E402
+from youface.api.routes import config as _config  # noqa: E402
+from youface.api.routes import common as _common  # noqa: E402
+from youface.api.routes import tenants as _tenants  # noqa: E402
+from youface.api.routes import webhooks as _webhooks  # noqa: E402
+from youface.api.routes import presets as _presets  # noqa: E402
+from youface.api.routes import metrics as _metrics  # noqa: E402
+from youface.api.routes import plugins as _plugins  # noqa: E402
+from youface.api.routes import train as _train  # noqa: E402
+from youface.api.routes import backends as _backends  # noqa: E402
+from youface.api.routes import headswap as _headswap  # noqa: E402
+
+
+# Include sub-routers from migrated submodules into the main `router`.
+# The legacy file's own definitions are registered on the SAME router,
+# so including here just adds the migrated ones (FastAPI de-dupes by path).
+router.include_router(_projects.router)
+router.include_router(_hardware.router)
+router.include_router(_config.router)
+router.include_router(_tenants.router)
+router.include_router(_webhooks.router)
+router.include_router(_presets.router)
+router.include_router(_metrics.router)
+router.include_router(_plugins.router)
+router.include_router(_train.router)
+router.include_router(_backends.router)
+router.include_router(_headswap.router)
+
+
+__all__ = [
+    "router",
+    "model_download_state",
+    "download_thread",
+    "DownloadModelsRequest",
+    "ProjectCreateInput",
+    "ConfigUpdateRequest",
+    "JobCreateRequest",
+    "FaceMapping",
+    "FaceAnalyzeRequest",
+]

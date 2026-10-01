@@ -6,9 +6,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from facefusion.api.main import app
-from facefusion.api.database import Base, get_db, JobModel
-from facefusion.jobs import job_manager
+from youface.api.main import app
+from youface.api.database import Base, get_db, JobModel
+from youface.jobs import job_manager
 
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(
@@ -69,7 +69,7 @@ def test_preview_with_model_options() -> None:
         "frame_enhancer_blend": 75
     }
 
-    # Como o preview executa o pipeline real do FaceFusion, que exige ONNX e arquivos reais,
+    # Como o preview executa o pipeline real do YouFace, que exige ONNX e arquivos reais,
     # verificamos se a requisição passa na validação JSON (200 ou erro de processamento do arquivo dummy, mas não 422).
     # Como enviamos dados binários fake, ele deve retornar erro 500/400 de processamento (ou seja, a validação de parâmetros passou!).
     response = client.post("/api/preview", json=payload)

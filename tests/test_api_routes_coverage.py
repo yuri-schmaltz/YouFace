@@ -27,8 +27,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from facefusion.api.main import app
-from facefusion.api.database import Base, get_db
+from youface.api.main import app
+from youface.api.database import Base, get_db
 
 # Setup in-memory DB (same pattern as test_api_endpoints.py)
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
@@ -79,7 +79,7 @@ def test_get_config_returns_expected_fields(client):
 def test_post_config_persists_values(client):
     """POST /api/config deve persistir os valores enviados."""
     payload = {
-        "temp_path": "/tmp/test_facefusion",
+        "temp_path": "/tmp/test_youface",
         "jobs_path": "/tmp/test_jobs",
         "log_level": "debug",
         "execution_thread_count": 8,
@@ -188,9 +188,9 @@ def test_media_cleanup_returns_counts(tmp_path):
     import os
     os.utime(crops / "old.jpg", (time.time() - 7200, time.time() - 7200))
 
-    from facefusion import state_manager
+    from youface import state_manager
     with patch.object(state_manager, "get_item", return_value=str(tmp_path)):
-        from facefusion.api.database import get_db
+        from youface.api.database import get_db
         def override_get_db():
             try:
                 db = TestingSessionLocal()
@@ -236,13 +236,13 @@ def test_analyze_faces_validates_request_body(client):
 
 def test_diagnostic_export_returns_zip(client, tmp_path):
     """GET /api/diagnostic/export deve retornar um ZIP válido."""
-    with patch("facefusion.filesystem.get_default_path", return_value=str(tmp_path)):
-        with patch("facefusion.state_manager.get_item", return_value="facefusion.ini"):
-            # Cria um facefusion.ini fake
-            (tmp_path / "facefusion.ini").write_text("[paths]\n")
-            (tmp_path / "facefusion.log").write_text("/home/johndoe/test\n")
+    with patch("youface.filesystem.get_default_path", return_value=str(tmp_path)):
+        with patch("youface.state_manager.get_item", return_value="youface.ini"):
+            # Cria um youface.ini fake
+            (tmp_path / "youface.ini").write_text("[paths]\n")
+            (tmp_path / "youface.log").write_text("/home/johndoe/test\n")
 
-            from facefusion.api.database import get_db
+            from youface.api.database import get_db
             def override_get_db():
                 try:
                     db = TestingSessionLocal()
